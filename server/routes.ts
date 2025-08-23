@@ -269,6 +269,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/coupons/:id', requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteCoupon(id);
+      if (!success) {
+        return res.status(404).json({ error: 'Coupon not found' });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting coupon:', error);
+      res.status(500).json({ error: 'Failed to delete coupon' });
+    }
+  });
+
+  // Export Orders API
+  app.get('/api/export/orders', requireAuth, async (req, res) => {
+    try {
+      const orders = await storage.getAllOrders();
+      
+      // Create CSV content
+      const csvHeaders = 'Order Number,Customer Phone,Status,Amount (GHS),Date,Items\n';
+      const csvRows = orders.map(order => {
+        const date = new Date(order.createdAt).toLocaleDateString();
+        const amount = parseFloat(order.totalGhs || "0").toFixed(2);
+        return `"${order.orderNumber}","${order.customerPhone || 'N/A'}","${order.status}","₵${amount}","${date}",""`;
+      }).join('\n');
+      
+      const csvContent = csvHeaders + csvRows;
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=orders-export.csv');
+      res.send(csvContent);
+    } catch (error) {
+      console.error('Error exporting orders:', error);
+      res.status(500).json({ error: 'Failed to export orders' });
+    }
+  });
+
   // Reconciliation API
   app.post('/api/reconciliation/force', requireAuth, async (req, res) => {
     try {

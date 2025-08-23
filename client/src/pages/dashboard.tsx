@@ -16,9 +16,9 @@ export default function Dashboard() {
     queryKey: ["/api/dashboard/metrics"],
   });
 
-  const { data: recentOrders } = useQuery({
+  const { data: recentOrders } = useQuery<any[]>({
     queryKey: ["/api/orders"],
-    select: (data) => data?.slice(0, 5) || []
+    select: (data) => (data as any[])?.slice(0, 5) || []
   });
 
   const recentOrdersData = recentOrders || [];
@@ -73,7 +73,7 @@ export default function Dashboard() {
 
           {/* Key Metrics Cards */}
           <MetricsCards 
-            data={metrics || { totalOrders: 0, revenue: "0", customers: 0, mtnPayments: 0 }} 
+            data={metrics as any || { totalOrders: 0, revenue: "0", customers: 0, mtnPayments: 0 }} 
             isLoading={metricsLoading}
           />
 
@@ -161,7 +161,11 @@ export default function Dashboard() {
                       Create Coupon
                     </Button>
                   </Link>
-                  <Button className="w-full bg-purple-600 text-white hover:bg-purple-700" data-testid="button-export-orders">
+                  <Button 
+                    className="w-full bg-purple-600 text-white hover:bg-purple-700" 
+                    onClick={() => window.open('/api/export/orders', '_blank')}
+                    data-testid="button-export-orders"
+                  >
                     <Download className="mr-2 h-4 w-4" />
                     Export Orders
                   </Button>

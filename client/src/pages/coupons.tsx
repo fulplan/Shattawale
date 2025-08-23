@@ -31,7 +31,7 @@ export default function Coupons() {
   });
   const { toast } = useToast();
 
-  const { data: coupons = [], isLoading } = useQuery({
+  const { data: coupons = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/coupons"],
   });
 
@@ -108,8 +108,8 @@ export default function Coupons() {
       value: parseFloat(couponForm.value),
       minOrderAmount: couponForm.minOrderAmount ? parseFloat(couponForm.minOrderAmount) : null,
       maxUses: couponForm.maxUses ? parseInt(couponForm.maxUses) : null,
-      startsAt: couponForm.startsAt ? new Date(couponForm.startsAt).toISOString() : null,
-      expiresAt: couponForm.expiresAt ? new Date(couponForm.expiresAt).toISOString() : null,
+      startsAt: couponForm.startsAt ? couponForm.startsAt : null,
+      expiresAt: couponForm.expiresAt ? couponForm.expiresAt : null,
     };
     
     createCouponMutation.mutate(formData);
