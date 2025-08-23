@@ -147,7 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clean the data before sending to storage
       const productData = {
         ...req.body,
-        categoryId: req.body.categoryId && req.body.categoryId !== "" && req.body.categoryId !== "none" ? req.body.categoryId : null
+        categoryId: req.body.categoryId && req.body.categoryId !== "" && req.body.categoryId !== "no-category" ? req.body.categoryId : null
       };
       const product = await storage.createProduct(productData);
       res.status(201).json(product);
@@ -163,7 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clean the data before sending to storage
       const productData = {
         ...req.body,
-        categoryId: req.body.categoryId && req.body.categoryId !== "" && req.body.categoryId !== "none" ? req.body.categoryId : null
+        categoryId: req.body.categoryId && req.body.categoryId !== "" && req.body.categoryId !== "no-category" ? req.body.categoryId : null
       };
       const product = await storage.updateProduct(id, productData);
       if (!product) {

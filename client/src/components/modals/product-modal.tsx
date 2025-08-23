@@ -112,7 +112,7 @@ export function ProductModal({ isOpen, onClose, product, categories }: ProductMo
       ...formData,
       priceGhs: parseFloat(formData.priceGhs),
       stock: parseInt(formData.stock),
-      categoryId: formData.categoryId && formData.categoryId !== "none" && formData.categoryId !== "" ? formData.categoryId : null,
+      categoryId: formData.categoryId && formData.categoryId !== "no-category" && formData.categoryId !== "" ? formData.categoryId : null,
     };
 
     if (product) {
@@ -223,7 +223,7 @@ export function ProductModal({ isOpen, onClose, product, categories }: ProductMo
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No category</SelectItem>
+                  <SelectItem value="no-category">No category</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}

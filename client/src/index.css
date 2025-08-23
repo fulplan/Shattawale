@@ -105,5 +105,41 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
+}
+
+/* Enhanced visual hierarchy */
+.dashboard-card {
+  @apply bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300;
+}
+
+.metric-card {
+  @apply bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg;
+}
+
+.status-indicator {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+/* Improved table design */
+.enhanced-table {
+  @apply bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden;
+}
+
+.enhanced-table th {
+  @apply bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-semibold text-sm;
+}
+
+.enhanced-table tr:hover {
+  @apply bg-gray-50 dark:bg-gray-700 transition-colors duration-200;
+}
+
+/* Progress bars */
+.progress-bar {
+  @apply w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2;
+}
+
+.progress-fill {
+  @apply bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300;
 }
