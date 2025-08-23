@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, User, Lock, AlertTriangle } from "lucide-react";
+import { Settings, User, Lock, AlertTriangle, Bot, Webhook } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function SettingsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -17,8 +19,79 @@ export default function SettingsPage() {
     newPassword: "",
     confirmPassword: ""
   });
+  const [telegramBotToken, setTelegramBotToken] = useState("");
   const { user, changePasswordMutation } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch system settings
+  const { data: settings = [] } = useQuery({
+    queryKey: ['/api/settings'],
+    queryFn: async () => {
+      const response = await fetch('/api/settings', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch settings');
+      return response.json();
+    }
+  });
+
+  // Update system setting mutation
+  const updateSettingMutation = useMutation({
+    mutationFn: async ({ key, value, description }: { key: string; value: string; description?: string }) => {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ key, value, description })
+      });
+      if (!response.ok) throw new Error('Failed to save setting');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      toast({
+        title: "Settings Updated",
+        description: "Your settings have been saved successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Load current telegram bot token from settings
+  useEffect(() => {
+    if (Array.isArray(settings)) {
+      const botTokenSetting = settings.find((s: any) => s.key === 'TELEGRAM_BOT_TOKEN');
+      if (botTokenSetting) {
+        setTelegramBotToken(botTokenSetting.value || '');
+      }
+    }
+  }, [settings]);
+
+  const handleTelegramSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!telegramBotToken.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid Telegram bot token.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateSettingMutation.mutate({
+      key: 'TELEGRAM_BOT_TOKEN',
+      value: telegramBotToken,
+      description: 'Telegram bot token for e-commerce bot'
+    });
+  };
 
   const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,6 +209,55 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Telegram Bot Configuration */}
+            <Card className="bg-white shadow-sm border border-gray-200">
+              <CardHeader className="border-b border-gray-200">
+                <CardTitle className="flex items-center space-x-2">
+                  <Bot className="h-5 w-5" />
+                  <span>Telegram Bot Configuration</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <form onSubmit={handleTelegramSave} className="space-y-4">
+                  <div>
+                    <Label htmlFor="telegramBotToken">Telegram Bot Token</Label>
+                    <Input
+                      id="telegramBotToken"
+                      type="password"
+                      value={telegramBotToken}
+                      onChange={(e) => setTelegramBotToken(e.target.value)}
+                      placeholder="Enter your Telegram bot token (e.g., 123456789:ABC...)"
+                      data-testid="input-telegram-bot-token"
+                    />
+                    <p className="mt-1 text-sm text-gray-500">
+                      Get your bot token from <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">@BotFather</a> on Telegram
+                    </p>
+                  </div>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                    <div className="flex items-start space-x-2">
+                      <Webhook className="h-4 w-4 text-blue-600 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-blue-900">Webhook Status</p>
+                        <p className="text-blue-700">
+                          After saving the bot token, the webhook will be automatically configured for your bot.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    disabled={updateSettingMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    data-testid="button-save-telegram-bot"
+                  >
+                    {updateSettingMutation.isPending ? "Saving..." : "Save Bot Token"}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
 

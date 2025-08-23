@@ -7,6 +7,7 @@ import {
   orderItems, 
   payments, 
   coupons, 
+  systemSettings,
   auditLogs,
   type AdminUser, 
   type InsertAdminUser,
@@ -24,6 +25,8 @@ import {
   type InsertPayment,
   type Coupon,
   type InsertCoupon,
+  type SystemSetting,
+  type InsertSystemSetting,
   type AuditLog,
   type InsertAuditLog
 } from "@shared/schema";
@@ -31,13 +34,12 @@ import { db } from "./db";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { type SessionStore } from "express-session";
 import { pool } from "./db";
 
 const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
-  sessionStore: SessionStore;
+  sessionStore: session.Store;
   
   // Admin Users
   getAdminUser(id: string): Promise<AdminUser | undefined>;
@@ -106,12 +108,19 @@ export interface IStorage {
     mtnPayments: number;
   }>;
   
+  // System Settings
+  getSystemSetting(key: string): Promise<SystemSetting | undefined>;
+  getAllSystemSettings(): Promise<SystemSetting[]>;
+  setSystemSetting(setting: InsertSystemSetting): Promise<SystemSetting>;
+  updateSystemSetting(key: string, value: string): Promise<SystemSetting | undefined>;
+  deleteSystemSetting(key: string): Promise<boolean>;
+  
   // Audit Logs
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: SessionStore;
+  sessionStore: session.Store;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({ 
@@ -451,6 +460,64 @@ export class DatabaseStorage implements IStorage {
       customers: customersCount.value,
       mtnPayments: mtnPaymentsCount.value
     };
+  }
+
+  // System Settings
+  async getSystemSetting(key: string): Promise<SystemSetting | undefined> {
+    const [setting] = await db
+      .select()
+      .from(systemSettings)
+      .where(eq(systemSettings.key, key));
+    return setting;
+  }
+
+  async getAllSystemSettings(): Promise<SystemSetting[]> {
+    return await db
+      .select()
+      .from(systemSettings)
+      .orderBy(systemSettings.key);
+  }
+
+  async setSystemSetting(setting: InsertSystemSetting): Promise<SystemSetting> {
+    const existing = await this.getSystemSetting(setting.key);
+    
+    if (existing) {
+      // Update existing setting
+      const [updated] = await db
+        .update(systemSettings)
+        .set({ 
+          value: setting.value, 
+          description: setting.description,
+          isEncrypted: setting.isEncrypted,
+          updatedAt: sql`now()`
+        })
+        .where(eq(systemSettings.key, setting.key))
+        .returning();
+      return updated;
+    } else {
+      // Create new setting
+      const [newSetting] = await db
+        .insert(systemSettings)
+        .values(setting)
+        .returning();
+      return newSetting;
+    }
+  }
+
+  async updateSystemSetting(key: string, value: string): Promise<SystemSetting | undefined> {
+    const [updated] = await db
+      .update(systemSettings)
+      .set({ value, updatedAt: sql`now()` })
+      .where(eq(systemSettings.key, key))
+      .returning();
+    return updated;
+  }
+
+  async deleteSystemSetting(key: string): Promise<boolean> {
+    const result = await db
+      .delete(systemSettings)
+      .where(eq(systemSettings.key, key));
+    return result.rowCount > 0;
   }
 
   // Audit Logs

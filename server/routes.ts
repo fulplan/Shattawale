@@ -290,6 +290,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // System Settings API
+  app.get('/api/settings', requireAuth, async (req, res) => {
+    try {
+      const settings = await storage.getAllSystemSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error('Error fetching system settings:', error);
+      res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+  });
+
+  app.post('/api/settings', requireAuth, async (req, res) => {
+    try {
+      const setting = await storage.setSystemSetting(req.body);
+      res.status(201).json(setting);
+    } catch (error) {
+      console.error('Error creating/updating system setting:', error);
+      res.status(500).json({ error: 'Failed to save setting' });
+    }
+  });
+
+  app.put('/api/settings/:key', requireAuth, async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { value } = req.body;
+      const setting = await storage.updateSystemSetting(key, value);
+      if (!setting) {
+        return res.status(404).json({ error: 'Setting not found' });
+      }
+      res.json(setting);
+    } catch (error) {
+      console.error('Error updating system setting:', error);
+      res.status(500).json({ error: 'Failed to update setting' });
+    }
+  });
+
   // Start reconciliation service
   reconciliationService.start();
 

@@ -30,12 +30,35 @@ class TelegramService {
   private webhookPath: string;
 
   constructor() {
-    this.botToken = process.env.TELEGRAM_BOT_TOKEN || '';
+    this.initializeBotToken();
     this.webhookPath = process.env.TELEGRAM_WEBHOOK_SECRET_PATH || '/webhook/telegram/secret';
+  }
+
+  private async initializeBotToken() {
+    // First try to get from database
+    try {
+      const setting = await storage.getSystemSetting('TELEGRAM_BOT_TOKEN');
+      if (setting && setting.value) {
+        this.botToken = setting.value;
+        return;
+      }
+    } catch (error) {
+      console.warn('Could not load Telegram bot token from database:', error);
+    }
+
+    // Fallback to environment variable
+    this.botToken = process.env.TELEGRAM_BOT_TOKEN || '';
     
     if (!this.botToken) {
-      throw new Error('TELEGRAM_BOT_TOKEN is required');
+      console.warn('TELEGRAM_BOT_TOKEN not configured. Bot functionality will be limited.');
     }
+  }
+
+  async getBotToken(): Promise<string> {
+    if (!this.botToken) {
+      await this.initializeBotToken();
+    }
+    return this.botToken;
   }
 
   async sendMessage(chatId: number, text: string, options: any = {}) {
