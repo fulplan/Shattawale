@@ -26,7 +26,7 @@ interface TelegramUpdate {
 }
 
 class TelegramService {
-  private botToken: string;
+  private botToken: string = '';
   private webhookPath: string;
 
   constructor() {

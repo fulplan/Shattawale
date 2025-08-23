@@ -251,15 +251,16 @@ export class DatabaseStorage implements IStorage {
   async createProduct(product: InsertProduct): Promise<Product> {
     const [newProduct] = await db
       .insert(products)
-      .values(product)
+      .values([product])
       .returning();
     return newProduct;
   }
 
   async updateProduct(id: string, updates: Partial<InsertProduct>): Promise<Product | undefined> {
+    const updateData: any = { ...updates, updatedAt: sql`now()` };
     const [updated] = await db
       .update(products)
-      .set({ ...updates, updatedAt: sql`now()` })
+      .set(updateData)
       .where(eq(products.id, id))
       .returning();
     return updated || undefined;
@@ -517,7 +518,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(systemSettings)
       .where(eq(systemSettings.key, key));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Audit Logs
