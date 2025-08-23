@@ -62,7 +62,8 @@ class TelegramService {
   }
 
   async sendMessage(chatId: number, text: string, options: any = {}) {
-    const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
+    const botToken = await this.getBotToken();
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
     
     try {
       const response = await fetch(url, {
@@ -91,7 +92,8 @@ class TelegramService {
   }
 
   async sendPhoto(chatId: number, photo: string, caption?: string, options: any = {}) {
-    const url = `https://api.telegram.org/bot${this.botToken}/sendPhoto`;
+    const botToken = await this.getBotToken();
+    const url = `https://api.telegram.org/bot${botToken}/sendPhoto`;
     
     try {
       const response = await fetch(url, {
@@ -176,7 +178,8 @@ class TelegramService {
     const messageId = callbackQuery.message.message_id;
 
     // Answer callback query to remove loading state
-    await fetch(`https://api.telegram.org/bot${this.botToken}/answerCallbackQuery`, {
+    const botToken = await this.getBotToken();
+    await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ callback_query_id: callbackQuery.id }),
@@ -483,6 +486,43 @@ Type your question below or contact us directly!
         }
       });
     }
+  }
+
+  async setWebhook(webhookUrl: string) {
+    const botToken = await this.getBotToken();
+    if (!botToken) {
+      console.error('Cannot set webhook: No bot token configured');
+      return false;
+    }
+    
+    const url = `https://api.telegram.org/bot${botToken}/setWebhook`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: webhookUrl + this.webhookPath,
+          allowed_updates: ['message', 'callback_query']
+        }),
+      });
+
+      const result = await response.json();
+      console.log('Webhook set result:', result);
+      return result.ok;
+    } catch (error) {
+      console.error('Error setting webhook:', error);
+      return false;
+    }
+  }
+
+  async refreshBotToken() {
+    console.log('Refreshing bot token from database...');
+    this.botToken = ''; // Clear current token
+    await this.initializeBotToken();
+    console.log('Bot token refreshed successfully');
   }
 
   getWebhookPath() {

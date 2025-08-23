@@ -303,7 +303,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/settings', requireAuth, async (req, res) => {
     try {
-      const setting = await storage.setSystemSetting(req.body);
+      const { key, value, description } = req.body;
+      const setting = await storage.setSystemSetting({ key, value, description });
+      
+      // If Telegram bot token was updated, refresh the service and webhook
+      if (key === 'TELEGRAM_BOT_TOKEN') {
+        console.log('Telegram bot token updated, refreshing service...');
+        const { telegramService } = await import('./services/telegram');
+        await telegramService.refreshBotToken();
+        
+        // Re-register webhook if we have a webhook URL
+        const webhookUrl = process.env.REPLIT_DEPLOYMENT_URL || `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+        if (webhookUrl && value) {
+          console.log('Re-registering webhook with new bot token...');
+          const webhookSet = await telegramService.setWebhook(webhookUrl);
+          console.log('Webhook registration result:', webhookSet);
+        }
+      }
+      
       res.status(201).json(setting);
     } catch (error) {
       console.error('Error creating/updating system setting:', error);
