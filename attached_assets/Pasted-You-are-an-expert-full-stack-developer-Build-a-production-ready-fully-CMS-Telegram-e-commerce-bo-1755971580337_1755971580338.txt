@@ -1,0 +1,230 @@
+You are an expert full-stack developer. Build a **production-ready, fully-CMS Telegram e-commerce bot** that accepts **MTN Mobile Money (MoMo) as the only payment method** (currency: GHS). Deliver complete source code, docs, tests, and deployment scripts. **Do not ask clarifying questions — implement sensible defaults where the spec is ambiguous.**
+
+---
+
+## PROJECT GOALS
+
+* Telegram bot storefront: customers browse, add to cart, checkout and pay using **MTN MoMo only**.
+* Admin CMS web app (authenticated) to manage products, categories, inventory, orders, coupons, and analytics.
+* Robust MTN MoMo integration (server-side collection/payment flow + webhook handling) as the sole payment option.
+* Production readiness: Docker, `.env.example`, HTTPS/webhook readiness, automated tests, and clear README.
+
+---
+
+## MANDATORY TECH STACK & DEFAULTS
+
+* **Backend:** Node.js + TypeScript (Express or Fastify). Use TypeScript.
+* **ORM/DB:** PostgreSQL with Prisma (migrations & seeding).
+* **Admin CMS:** React + Next.js (single-repo mono). Tailwind CSS for styling.
+* **Telegram Bot:** Official Bot API via **webhooks** (no long-polling in production). Secure webhook path required.
+* **Payment:** MTN Mobile Money (MoMo) Collections API (sandbox + production).
+* **Containerization:** Docker + docker-compose for local dev; Dockerfile(s) and deploy notes for DigitalOcean App Platform or Railway (choose one in README).
+* **Tests:** Jest for unit & integration tests; mock MTN endpoints for integration.
+* **Docs:** README with env variables, MTN sandbox setup, admin creds, Postman collection / OpenAPI (Swagger).
+
+---
+
+## CORE FEATURES — TELEGRAM CUSTOMER BOT
+
+* `/start`: welcome, save user profile (telegram\_id, name, optional phone).
+* Main menu: Browse by category, Search, Cart, Orders, Support, Profile.
+* Product listing with pagination; details show images, description, price (GHS), stock, variants.
+* Cart: add, adjust quantity, remove item.
+* Checkout flow (single payment option: MTN MoMo):
+
+  1. Confirm or enter delivery address.
+  2. Choose shipping (defaults below).
+  3. Only show **MTN MoMo** as payment option.
+  4. Ask for/validate phone number in Ghana format.
+  5. Server initiates MTN collection request for exact GHS amount with unique idempotency key and callback URL.
+  6. Show “Waiting for payment…” message and persist pending state.
+  7. On MTN webhook, update order status to PAID or FAILED, notify user (include receipt), and notify admin channel.
+* UX: inline keyboards, quick replies, thumbnails, formatted receipts.
+* Order lifecycle: `PENDING → PAID → PACKED → SHIPPED → DELIVERED → CANCELLED/REFUNDED`.
+* Admin receives new order alerts (channel or admin user).
+
+---
+
+## ADMIN CMS FEATURES
+
+* Secure auth: email + password, hashed (bcrypt/argon2). Roles: `admin`, `staff`.
+* Product CRUD: title, sku, price\_ghs, stock, images, description, tags, variants, category.
+* Category management, filters, inventory controls, low-stock alerts.
+* Orders dashboard: search, filter, change status, add tracking, manual refunds.
+* Coupons & discounts: percent/fixed, expiry, usage limits.
+* Customers list: telegram profiles & order history.
+* Payments log: MTN reference, status, raw webhook payload.
+* Basic analytics: revenue, orders count, conversion rate.
+* Uploads: local filesystem in dev; S3-compatible storage configurable.
+
+---
+
+## MTN MoMo INTEGRATION (CRITICAL)
+
+* Implement MTN Collections API flow:
+
+  * Env vars: `MTN_CLIENT_ID`, `MTN_CLIENT_SECRET`, `MTN_API_BASE_URL`, `MTN_ENV` (sandbox|production), `MTN_CALLBACK_SECRET`.
+  * Token caching with expiry.
+  * Initiate collection with `amount` (GHS), `externalId`=internal order ID, `callback` URL.
+  * Webhook endpoint that validates signature (default: HMAC-SHA256 of payload using `MTN_CALLBACK_SECRET` in header `X-MTN-SIGNATURE`). If signature not present, fallback to idempotency/provider\_reference checks.
+  * Idempotency: use key `order:{order_id}:{uuid}` to avoid duplicate charges.
+  * Retry & reconciliation: scheduled reconciliation job (default cron `*/15 * * * *`) polls MTN for pending payments after configurable timeouts.
+  * Persist full MTN request/response to `payments` table.
+  * Do not log client secrets.
+* Edge cases:
+
+  * Customer denies payment → mark `PAYMENT_FAILED` or `CANCELLED`.
+  * Partial payments are **not supported**.
+  * Payment timeout default: **10 minutes** then mark `PAYMENT_TIMEOUT` unless reconciled.
+
+---
+
+## DATA MODEL (MINIMAL)
+
+* `users` (telegram\_id, name, phone, created\_at)
+* `products` (id, title, sku, description, price\_ghs, stock, images\[], metadata)
+* `categories` (id, name, slug)
+* `orders` (id, user\_id, items JSON, total\_ghs, shipping\_ghs, status, address, created\_at, updated\_at)
+* `order_items` (order\_id, product\_id, qty, price\_ghs, variant)
+* `payments` (id, order\_id, provider='mtn\_momo', amount\_ghs, currency='GHS', status, provider\_reference, raw\_payload, created\_at)
+* `coupons`, `admin_users`, `audit_logs`
+* Implement Prisma migrations & seed with 5 sample products and one admin user.
+
+---
+
+## SECURITY, HOSTING & INFRA DEFAULTS
+
+* Domain & TLS: README instructs to use Let's Encrypt; webhook path must be secret: `/webhook/telegram/<RANDOM_TOKEN>`.
+* Default hosting mention: DigitalOcean App Platform or Railway (document in README).
+* Rate limiting: webhook 100 req/min/IP; auth endpoints 10 req/min/IP.
+* Secrets in env variables only; include `.env.example`.
+* Admin default seed: `admin@example.com` / `ChangeMe!2025` — force password change on first login (documented).
+* Health endpoint `/healthz`.
+* Logging: structured logs; recommend Sentry/Logflare — include DSN env placeholder `SENTRY_DSN`.
+* CSRF protection for admin, secure cookies, session or JWT-based auth.
+* Data retention: keep raw payment payloads for **90 days**; allow admin to purge user data.
+* Database backup: document `pg_dump` cron instruction in README.
+
+---
+
+## BUSINESS RULES & DEFAULTS (TO INCLUDE IN PROMPT/README)
+
+* Shipping: `Standard: GHS 10 flat`, `Free if total >= GHS 200`. Admin can override per order.
+* VAT: prices are **inclusive** by default (no extra VAT applied).
+* Refunds: **manual** via Admin UI.
+* Payment timeout: `10 minutes`.
+* Reconciliation cron: `*/15 * * * *`.
+* Phone validation regex: `^(?:\\+233|0)\\d{9}$` (accepts `+233XXXXXXXXX` or `0XXXXXXXXX`).
+* Idempotency key format: `order:{order_id}:{uuid}`.
+* Currency: `GHS` only.
+* Max quantity per product: 100 units (default).
+
+---
+
+## ENVIRONMENT VARIABLES (`.env.example`)
+
+Include at minimum:
+
+```
+DATABASE_URL=
+PORT=3000
+NODE_ENV=development
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_WEBHOOK_SECRET_PATH=/webhook/telegram/<RANDOM_TOKEN>
+JWT_SECRET=
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=ChangeMe!2025
+MTN_CLIENT_ID=
+MTN_CLIENT_SECRET=
+MTN_API_BASE_URL=
+MTN_ENV=sandbox
+MTN_CALLBACK_SECRET=
+S3_ENDPOINT=
+S3_BUCKET=
+S3_KEY=
+S3_SECRET=
+RECONCILE_CRON=*/15 * * * *
+SENTRY_DSN=
+RECONCILE_TIMEOUT_MINUTES=10
+```
+
+---
+
+## TESTING & QA
+
+* Unit tests for core logic: token refresh, collection request, webhook handling.
+* Integration tests using mocked MTN sandbox (simulate success, failure, duplicate callback, timeout).
+* E2E smoke: seed DB → Telegram bot flow (start → add to cart → checkout) → simulate webhook success → order becomes `PAID` and appears in admin.
+* Provide Postman collection and OpenAPI spec (`/openapi.json`).
+
+---
+
+## ACCEPTANCE CRITERIA (WHAT “DONE” LOOKS LIKE)
+
+1. `docker-compose up` boots Postgres + backend + admin, runs migrations and seeds 5 products + creates admin user.
+2. Telegram bot `/start` works; user can browse → add to cart → checkout → initiate MTN collection.
+3. Simulated MTN sandbox webhook (provided examples) updates order to `PAID`; user receives a success message and admin dashboard shows order.
+4. Unit + integration tests (payment flows) pass in CI (GitHub Actions).
+5. README documents all env variables, MTN sandbox instructions, how to set Telegram webhook, default admin credentials and how to change them.
+
+---
+
+## DELIVERABLES
+
+* Mono-repo with `/server` and `/admin`.
+* Dockerfile(s) and `docker-compose.yml`.
+* Prisma migrations and seed scripts.
+* README with setup, MTN sandbox setup, how to register Telegram bot, webhook setup, deploy notes for DigitalOcean/Railway.
+* Postman collection / OpenAPI spec.
+* Automated tests and GitHub Actions CI workflow.
+* Example MTN webhook JSON payloads in `/docs/examples/`.
+* Clear code comments on payment edge cases and security.
+
+---
+
+## NON-FUNCTIONAL & NICE-TO-HAVE (defaults included)
+
+* PDF receipt generation (optional) — use `pdfkit` or HTML->PDF.
+* Image hosting: local dev; S3-compatible in production (configurable).
+* Monitoring: Sentry placeholder enabled via `SENTRY_DSN`.
+* Optional SMS/email admin notifications if keys provided (Twilio/SendGrid).
+* Localization ready (English default).
+
+---
+
+## MESSAGING TEMPLATES (copy into code)
+
+* Payment request: `Pay GHS {amount} for Order #{order_id} via MTN Mobile Money. Tap Pay with MoMo to send the payment from your {phone}. You will receive a MoMo prompt on your phone to authorize.`
+* Waiting: `⏳ Waiting for payment confirmation… This may take up to 10 minutes. You will be notified here when the payment completes.`
+* Success: `✅ Payment received for Order #{order_id}. Thank you! Your order is now being processed. Summary: {items}, Total: GHS {amount}.`
+* Failure: `❌ Payment failed or cancelled. You can retry checkout or contact support.`
+
+---
+
+## IMPLEMENTATION NOTES (developer must follow)
+
+* Use webhook-based Telegram Bot with a **secret** webhook path.
+* Implement MTN token caching & secure storage.
+* Webhook validation via HMAC-SHA256 using `MTN_CALLBACK_SECRET` header `X-MTN-SIGNATURE`. Fallback to idempotency.
+* Reconciliation job polls MTN for pending payments if webhook not received.
+* Ensure idempotent handling of duplicate callbacks.
+* Do not implement any other payment gateways — **MTN MoMo only**.
+* Provide sample MTN sandbox credentials instructions and phone numbers in README.
+
+---
+
+## QUICK DEFAULTS TO EMBED (developer must use if not specified)
+
+* Payment timeout: `10 minutes`.
+* Reconciliation cron: `*/15 * * * *`.
+* Phone validation regex: `^(?:\\+233|0)\\d{9}$`.
+* Default admin seed: `admin@example.com` / `ChangeMe!2025` (force change).
+* Idempotency key: `order:{order_id}:{uuid}`.
+* Shipping: `Standard GHS 10`, `Free if total >= GHS 200`.
+* Retain raw payment payloads: **90 days**.
+
+---
+
+## FINAL NOTE
+
+Produce production-ready, well-documented code, tests, and CI — scaffold server and admin, implement core models, Telegram basic flows (start, browse, add to cart, view cart), then fully wire MTN MoMo collection and webhook handling; finish admin CMS and tests. Deliver a repo (or zip) runnable with Docker and connectable to MTN sandbox.
