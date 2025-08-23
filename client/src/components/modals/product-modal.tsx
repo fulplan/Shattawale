@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CloudUpload } from "lucide-react";
+import { CloudUpload, Plus } from "lucide-react";
+import { CategoryModal } from "./category-modal";
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface ProductModalProps {
 
 export function ProductModal({ isOpen, onClose, product, categories }: ProductModalProps) {
   const { toast } = useToast();
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     sku: "",
@@ -110,6 +112,7 @@ export function ProductModal({ isOpen, onClose, product, categories }: ProductMo
       ...formData,
       priceGhs: parseFloat(formData.priceGhs),
       stock: parseInt(formData.stock),
+      categoryId: formData.categoryId && formData.categoryId !== "none" && formData.categoryId !== "" ? formData.categoryId : null,
     };
 
     if (product) {
@@ -201,13 +204,26 @@ export function ProductModal({ isOpen, onClose, product, categories }: ProductMo
               />
             </div>
             <div>
-              <Label htmlFor="category">Category</Label>
+              <div className="flex items-center justify-between mb-1">
+                <Label htmlFor="category">Category</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="h-6 px-2 text-xs text-blue-600 hover:text-blue-700"
+                  data-testid="button-add-category"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Category
+                </Button>
+              </div>
               <Select value={formData.categoryId} onValueChange={(value) => handleChange("categoryId", value)}>
                 <SelectTrigger data-testid="select-product-category">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No category</SelectItem>
+                  <SelectItem value="">No category</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
@@ -267,6 +283,11 @@ export function ProductModal({ isOpen, onClose, product, categories }: ProductMo
           </div>
         </form>
       </DialogContent>
+      
+      <CategoryModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+      />
     </Dialog>
   );
 }

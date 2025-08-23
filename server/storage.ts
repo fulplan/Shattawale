@@ -249,9 +249,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProduct(product: InsertProduct): Promise<Product> {
+    const productData: any = {
+      ...product,
+      images: product.images ? Array.from(product.images) : [],
+      tags: product.tags ? Array.from(product.tags) : [],
+    };
     const [newProduct] = await db
       .insert(products)
-      .values(product)
+      .values(productData)
       .returning();
     return newProduct;
   }

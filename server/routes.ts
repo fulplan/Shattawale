@@ -144,7 +144,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/products', requireAuth, async (req, res) => {
     try {
-      const product = await storage.createProduct(req.body);
+      // Clean the data before sending to storage
+      const productData = {
+        ...req.body,
+        categoryId: req.body.categoryId && req.body.categoryId !== "" && req.body.categoryId !== "none" ? req.body.categoryId : null
+      };
+      const product = await storage.createProduct(productData);
       res.status(201).json(product);
     } catch (error) {
       console.error('Error creating product:', error);
@@ -155,7 +160,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/products/:id', requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
-      const product = await storage.updateProduct(id, req.body);
+      // Clean the data before sending to storage
+      const productData = {
+        ...req.body,
+        categoryId: req.body.categoryId && req.body.categoryId !== "" && req.body.categoryId !== "none" ? req.body.categoryId : null
+      };
+      const product = await storage.updateProduct(id, productData);
       if (!product) {
         return res.status(404).json({ error: 'Product not found' });
       }
@@ -198,6 +208,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating category:', error);
       res.status(500).json({ error: 'Failed to create category' });
+    }
+  });
+
+  app.put('/api/categories/:id', requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const category = await storage.updateCategory(id, req.body);
+      if (!category) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+      res.json(category);
+    } catch (error) {
+      console.error('Error updating category:', error);
+      res.status(500).json({ error: 'Failed to update category' });
+    }
+  });
+
+  app.delete('/api/categories/:id', requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteCategory(id);
+      if (!success) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      res.status(500).json({ error: 'Failed to delete category' });
     }
   });
 

@@ -5,3 +5,7 @@
 [x] 5. Fixed Select.Item empty value error in product modal
 [x] 6. Enhanced customer page with delivery addresses and phone numbers
 [x] 7. Fixed action functions and "View Orders" button functionality
+[x] 8. Fixed UUID database error for categoryId field
+[x] 9. Added category creation functionality with modal
+[x] 10. Added missing category update/delete API routes
+[x] 11. Fixed product creation database type issues
