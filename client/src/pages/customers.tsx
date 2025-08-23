@@ -14,11 +14,11 @@ export default function Customers() {
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["/api/customers"],
-  });
+  }) as { data: any[], isLoading: boolean };
 
   const { data: orders = [] } = useQuery({
     queryKey: ["/api/orders"],
-  });
+  }) as { data: any[] };
 
   const filteredCustomers = customers.filter((customer: any) => {
     const searchTerm = searchQuery.toLowerCase();
@@ -38,6 +38,49 @@ export default function Customers() {
   const getCustomerTotalSpent = (customerId: string) => {
     const customerOrders = orders.filter((order: any) => order.userId === customerId && order.status === 'PAID');
     return customerOrders.reduce((total: number, order: any) => total + parseFloat(order.totalGhs || "0"), 0);
+  };
+
+  const getCustomerLatestAddress = (customerId: string) => {
+    const customerOrders = orders.filter((order: any) => order.userId === customerId);
+    if (customerOrders.length === 0) return null;
+    
+    // Get the most recent order with address
+    const ordersWithAddress = customerOrders
+      .filter((order: any) => order.address)
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    return ordersWithAddress.length > 0 ? ordersWithAddress[0].address : null;
+  };
+
+  const getCustomerPhone = (customerId: string) => {
+    // First check user phone, then check latest order phone
+    const customer = customers.find((c: any) => c.id === customerId);
+    if (customer?.phone) return customer.phone;
+    
+    const customerOrders = orders.filter((order: any) => order.userId === customerId);
+    if (customerOrders.length === 0) return null;
+    
+    // Get the most recent order with phone
+    const ordersWithPhone = customerOrders
+      .filter((order: any) => order.customerPhone)
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    return ordersWithPhone.length > 0 ? ordersWithPhone[0].customerPhone : null;
+  };
+
+  const handleViewOrders = (customerId: string) => {
+    const customerOrders = orders.filter((order: any) => order.userId === customerId);
+    if (customerOrders.length === 0) {
+      alert('This customer has no orders yet.');
+      return;
+    }
+    
+    // Create a detailed summary
+    const orderSummary = customerOrders.map((order: any) => 
+      `Order #${order.orderNumber} - ${order.status} - ₵${order.totalGhs}`
+    ).join('\n');
+    
+    alert(`Customer Orders (${customerOrders.length} total):\n\n${orderSummary}`);
   };
 
   const formatDate = (dateString: string) => {
@@ -114,7 +157,7 @@ export default function Customers() {
                       Telegram Info
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Phone
+                      Contact & Address
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Orders
@@ -190,8 +233,24 @@ export default function Customers() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {customer.phone || 'N/A'}
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              <div className="font-medium">
+                                📱 {getCustomerPhone(customer.id) || 'No phone'}
+                              </div>
+                              {(() => {
+                                const address = getCustomerLatestAddress(customer.id);
+                                return address ? (
+                                  <div className="text-xs text-gray-500 mt-1 max-w-xs">
+                                    📍 {typeof address === 'string' ? address : 
+                                         `${address.street || ''} ${address.city || ''} ${address.region || ''}`.trim() || 'Address available'}
+                                  </div>
+                                ) : (
+                                  <div className="text-xs text-gray-400 mt-1">No delivery address</div>
+                                );
+                              })()
+                              }
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-testid={`customer-orders-${customer.id}`}>
                             {orderCount}
@@ -207,6 +266,7 @@ export default function Customers() {
                               variant="ghost"
                               size="sm"
                               className="text-blue-600 hover:text-blue-900"
+                              onClick={() => handleViewOrders(customer.id)}
                               data-testid={`button-view-customer-${customer.id}`}
                             >
                               <Eye className="h-4 w-4 mr-1" />
