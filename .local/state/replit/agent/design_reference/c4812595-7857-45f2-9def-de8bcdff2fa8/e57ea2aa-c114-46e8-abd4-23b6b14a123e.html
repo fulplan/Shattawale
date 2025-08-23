@@ -1,0 +1,1026 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcomBot Admin - Telegram E-commerce Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif'],
+                        'mono': ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        'mtn': '#FFCB05',
+                        'telegram': '#0088CC'
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- @COMPONENT: LoginPage [shows admin authentication] -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div class="max-w-md w-full space-y-8">
+            <div class="text-center">
+                <div class="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-shopping-cart text-white text-2xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900">EcomBot Admin</h2>
+                <p class="mt-2 text-gray-600">Telegram E-commerce Management System</p>
+            </div>
+            
+            <div class="bg-white py-8 px-6 shadow-lg rounded-xl border border-gray-200">
+                <form class="space-y-6" data-event="submit:handleLogin">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                        <input id="email" name="email" type="email" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                               placeholder="admin@example.com" data-bind="auth.email">
+                    </div>
+                    
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input id="password" name="password" type="password" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                               placeholder="Enter your password" data-bind="auth.password">
+                    </div>
+                    
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        <div class="flex">
+                            <i class="fas fa-exclamation-triangle text-amber-600 mr-2 mt-0.5"></i>
+                            <div class="text-sm text-amber-800">
+                                <strong>Default Credentials:</strong><br>
+                                Email: admin@example.com<br>
+                                Password: ChangeMe!2025<br>
+                                <em>Please change on first login</em>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all font-medium"
+                            data-implementation="Validate credentials and redirect to dashboard">
+                        Sign In
+                    </button>
+                </form>
+            </div>
+            
+            <div class="text-center text-sm text-gray-500">
+                <p>MTN MoMo Integration • Ghana Market • Production Ready</p>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: LoginPage -->
+
+    <!-- @COMPONENT: MainDashboard [authenticated admin interface] -->
+    <div id="mainDashboard" class="hidden min-h-screen bg-gray-50">
+        <!-- @COMPONENT: Sidebar [navigation menu] -->
+        <div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg border-r border-gray-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out" id="sidebar">
+            <div class="flex items-center justify-center h-16 px-4 border-b border-gray-200">
+                <div class="flex items-center space-x-2">
+                    <div class="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shopping-cart text-white text-sm"></i>
+                    </div>
+                    <span class="text-xl font-bold text-gray-900">EcomBot</span>
+                </div>
+            </div>
+            
+            <nav class="mt-5 px-2 space-y-1" data-implementation="Implement active state management">
+                <a href="#dashboard" class="bg-blue-50 text-blue-700 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+                    <i class="fas fa-chart-line mr-3 text-blue-500"></i>
+                    Dashboard
+                </a>
+                <a href="#products" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+                    <i class="fas fa-box mr-3 text-gray-400"></i>
+                    Products
+                </a>
+                <a href="#orders" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+                    <i class="fas fa-shopping-bag mr-3 text-gray-400"></i>
+                    Orders
+                </a>
+                <a href="#customers" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+                    <i class="fas fa-users mr-3 text-gray-400"></i>
+                    Customers
+                </a>
+                <a href="#payments" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+                    <i class="fas fa-credit-card mr-3 text-gray-400"></i>
+                    Payments
+                </a>
+                <a href="#coupons" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+                    <i class="fas fa-tags mr-3 text-gray-400"></i>
+                    Coupons
+                </a>
+                <a href="#analytics" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+                    <i class="fas fa-chart-bar mr-3 text-gray-400"></i>
+                    Analytics
+                </a>
+                <a href="#settings" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+                    <i class="fas fa-cog mr-3 text-gray-400"></i>
+                    Settings
+                </a>
+            </nav>
+            
+            <div class="absolute bottom-0 w-full p-4 border-t border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-gray-600 text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900" data-bind="user.name">Admin User</p>
+                        <p class="text-xs text-gray-500" data-bind="user.email">admin@example.com</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: Sidebar -->
+
+        <!-- @COMPONENT: MainContent [dynamic content area] -->
+        <div class="lg:pl-64">
+            <!-- @COMPONENT: TopBar [header with actions] -->
+            <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+                <button type="button" class="-m-2.5 p-2.5 text-gray-700 lg:hidden" id="sidebarToggle">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                
+                <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+                    <div class="relative flex flex-1">
+                        <!-- Search functionality placeholder -->
+                    </div>
+                    <div class="flex items-center gap-x-4 lg:gap-x-6">
+                        <!-- MTN MoMo Status Indicator -->
+                        <div class="flex items-center space-x-2">
+                            <div class="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
+                            <span class="text-sm text-gray-600">MTN MoMo Connected</span>
+                        </div>
+                        
+                        <!-- Notifications -->
+                        <button type="button" class="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500">
+                            <i class="fas fa-bell text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: TopBar -->
+
+            <!-- @COMPONENT: DashboardOverview [main analytics view] -->
+            <main class="py-8 px-4 sm:px-6 lg:px-8" id="dashboardContent">
+                <div class="mb-8">
+                    <h1 class="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+                    <p class="mt-2 text-gray-600">Monitor your Telegram e-commerce performance</p>
+                </div>
+
+                <!-- Key Metrics Cards -->
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+                    <!-- @MAP: metrics.map(metric => ( -->
+                    <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-shopping-bag text-blue-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Total Orders</dt>
+                                        <dd class="text-2xl font-semibold text-gray-900" data-bind="metrics.totalOrders">847</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center text-sm">
+                                    <span class="text-green-600 font-medium">+12.3%</span>
+                                    <span class="text-gray-500 ml-1">from last month</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-dollar-sign text-green-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Revenue (GHS)</dt>
+                                        <dd class="text-2xl font-semibold text-gray-900" data-bind="metrics.revenue">₵45,230</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center text-sm">
+                                    <span class="text-green-600 font-medium">+8.7%</span>
+                                    <span class="text-gray-500 ml-1">from last month</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-users text-purple-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Active Customers</dt>
+                                        <dd class="text-2xl font-semibold text-gray-900" data-bind="metrics.customers">1,247</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center text-sm">
+                                    <span class="text-green-600 font-medium">+5.2%</span>
+                                    <span class="text-gray-500 ml-1">from last month</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="h-10 w-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-mobile-alt text-yellow-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">MTN Payments</dt>
+                                        <dd class="text-2xl font-semibold text-gray-900" data-bind="metrics.mtnPayments">823</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex items-center text-sm">
+                                    <span class="text-green-600 font-medium">98.5%</span>
+                                    <span class="text-gray-500 ml-1">success rate</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                </div>
+
+                <!-- Recent Orders & Quick Actions -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Recent Orders -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-medium text-gray-900">Recent Orders</h3>
+                                    <a href="#orders" class="text-sm text-blue-600 hover:text-blue-800 font-medium">View all</a>
+                                </div>
+                            </div>
+                            <div class="divide-y divide-gray-200">
+                                <!-- @MAP: recentOrders.map(order => ( -->
+                                <div class="px-6 py-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="flex-shrink-0">
+                                                <div class="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                                    <span class="text-xs font-medium text-gray-600" data-bind="order.customerInitials">JD</span>
+                                                </div>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-medium text-gray-900" data-bind="order.id">Order #ORD-2024-001</p>
+                                                <p class="text-sm text-gray-500" data-bind="order.customer">John Doe (@johndoe)</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" data-bind="order.status">
+                                                PAID
+                                            </span>
+                                            <span class="text-sm font-medium text-gray-900" data-bind="order.amount">₵125.50</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="px-6 py-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="flex-shrink-0">
+                                                <div class="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                                    <span class="text-xs font-medium text-gray-600">AM</span>
+                                                </div>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-medium text-gray-900">Order #ORD-2024-002</p>
+                                                <p class="text-sm text-gray-500">Ama Mensah (@amamensah)</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                PENDING
+                                            </span>
+                                            <span class="text-sm font-medium text-gray-900">₵89.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="px-6 py-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="flex-shrink-0">
+                                                <div class="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                                    <span class="text-xs font-medium text-gray-600">KO</span>
+                                                </div>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-medium text-gray-900">Order #ORD-2024-003</p>
+                                                <p class="text-sm text-gray-500">Kwame Osei (@kwameosei)</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                SHIPPED
+                                            </span>
+                                            <span class="text-sm font-medium text-gray-900">₵256.80</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- @END_MAP )) -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions & System Status -->
+                    <div class="space-y-6">
+                        <!-- Quick Actions -->
+                        <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <h3 class="text-lg font-medium text-gray-900">Quick Actions</h3>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Add New Product
+                                </button>
+                                <button class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium">
+                                    <i class="fas fa-tags mr-2"></i>
+                                    Create Coupon
+                                </button>
+                                <button class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                                    <i class="fas fa-download mr-2"></i>
+                                    Export Orders
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- System Status -->
+                        <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <h3 class="text-lg font-medium text-gray-900">System Status</h3>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="h-2 w-2 bg-green-400 rounded-full"></div>
+                                        <span class="text-sm text-gray-700">Telegram Bot</span>
+                                    </div>
+                                    <span class="text-xs text-green-600 font-medium">Online</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="h-2 w-2 bg-green-400 rounded-full"></div>
+                                        <span class="text-sm text-gray-700">MTN MoMo API</span>
+                                    </div>
+                                    <span class="text-xs text-green-600 font-medium">Connected</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="h-2 w-2 bg-green-400 rounded-full"></div>
+                                        <span class="text-sm text-gray-700">Database</span>
+                                    </div>
+                                    <span class="text-xs text-green-600 font-medium">Healthy</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="h-2 w-2 bg-yellow-400 rounded-full"></div>
+                                        <span class="text-sm text-gray-700">Reconciliation</span>
+                                    </div>
+                                    <span class="text-xs text-yellow-600 font-medium">Running</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <!-- @END_COMPONENT: DashboardOverview -->
+
+            <!-- @COMPONENT: ProductManagement [hidden by default] -->
+            <main class="hidden py-8 px-4 sm:px-6 lg:px-8" id="productContent">
+                <div class="mb-8">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">Products</h1>
+                            <p class="mt-2 text-gray-600">Manage your product catalog and inventory</p>
+                        </div>
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Product
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Filters -->
+                <div class="bg-white p-6 rounded-lg border border-gray-200 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Search Products</label>
+                            <input type="text" placeholder="Search by name or SKU..." 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option>All Categories</option>
+                                <option>Electronics</option>
+                                <option>Fashion</option>
+                                <option>Home & Garden</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option>All Status</option>
+                                <option>Active</option>
+                                <option>Draft</option>
+                                <option>Out of Stock</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                            <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option>Recently Added</option>
+                                <option>Name A-Z</option>
+                                <option>Price Low-High</option>
+                                <option>Stock Level</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Table -->
+                <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price (GHS)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- @MAP: products.map(product => ( -->
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <!-- Sample smartphone product image -->
+                                            <img class="h-12 w-12 rounded-lg object-cover mr-4" 
+                                                 src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100" 
+                                                 alt="Smartphone product" data-mock-image="true">
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900" data-bind="product.title">iPhone 15 Pro Max</div>
+                                                <div class="text-sm text-gray-500">Latest Apple smartphone with advanced features</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="font-mono text-sm text-gray-900" data-bind="product.sku">IPH-15PM-128</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-bind="product.category">Electronics</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" data-bind="product.price">₵8,500.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" data-bind="product.stock">
+                                            25 in stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Active
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                                        <button class="text-red-600 hover:text-red-900">Delete</button>
+                                    </td>
+                                </tr>
+
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <!-- Sample fashion product image -->
+                                            <img class="h-12 w-12 rounded-lg object-cover mr-4" 
+                                                 src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100" 
+                                                 alt="T-shirt fashion item" data-mock-image="true">
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">Premium Cotton T-Shirt</div>
+                                                <div class="text-sm text-gray-500">Comfortable everyday wear in multiple colors</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="font-mono text-sm text-gray-900">TSH-COT-001</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Fashion</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₵45.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            5 in stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Active
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                                        <button class="text-red-600 hover:text-red-900">Delete</button>
+                                    </td>
+                                </tr>
+
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <!-- Sample home product image -->
+                                            <img class="h-12 w-12 rounded-lg object-cover mr-4" 
+                                                 src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100" 
+                                                 alt="Coffee maker appliance" data-mock-image="true">
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">Automatic Coffee Maker</div>
+                                                <div class="text-sm text-gray-500">12-cup programmable coffee maker with timer</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="font-mono text-sm text-gray-900">COF-MKR-12C</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Home & Garden</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₵320.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            Out of stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            Inactive
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                                        <button class="text-red-600 hover:text-red-900">Delete</button>
+                                    </td>
+                                </tr>
+                                <!-- @END_MAP )) -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1 flex justify-between sm:hidden">
+                                <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                    Previous
+                                </button>
+                                <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                    Next
+                                </button>
+                            </div>
+                            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-700">
+                                        Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium">97</span> products
+                                    </p>
+                                </div>
+                                <div>
+                                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                                        <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>
+                                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">2</button>
+                                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">3</button>
+                                        <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <!-- @END_COMPONENT: ProductManagement -->
+
+            <!-- @COMPONENT: PaymentLogs [MTN MoMo transaction history] -->
+            <main class="hidden py-8 px-4 sm:px-6 lg:px-8" id="paymentContent">
+                <div class="mb-8">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">Payment Logs</h1>
+                            <p class="mt-2 text-gray-600">MTN Mobile Money transaction history and reconciliation</p>
+                        </div>
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            <i class="fas fa-sync mr-2"></i>
+                            Force Reconciliation
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MTN MoMo Status Dashboard -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-check-circle text-green-600"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Successful Payments</p>
+                                <p class="text-2xl font-semibold text-gray-900" data-bind="payments.successful">823</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-clock text-yellow-600"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Pending</p>
+                                <p class="text-2xl font-semibold text-gray-900" data-bind="payments.pending">12</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-times-circle text-red-600"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Failed</p>
+                                <p class="text-2xl font-semibold text-gray-900" data-bind="payments.failed">24</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-percentage text-blue-600"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Success Rate</p>
+                                <p class="text-2xl font-semibold text-gray-900">98.5%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Transactions Table -->
+                <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-medium text-gray-900">Recent Transactions</h3>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-500">Auto-reconciliation:</span>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <div class="h-1.5 w-1.5 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+                                    Active (*/15 * * * *)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MTN Reference</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Phone</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- @MAP: paymentLogs.map(payment => ( -->
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="font-mono text-sm text-blue-600" data-bind="payment.orderId">ORD-2024-001</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="font-mono text-sm text-gray-900" data-bind="payment.mtnReference">MTN20240325001</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-bind="payment.phone">+233244123456</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" data-bind="payment.amount">₵125.50</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            SUCCESS
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-bind="payment.timestamp">2024-03-25 14:30:25</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-blue-600 hover:text-blue-900 mr-3" data-implementation="Show raw MTN webhook payload">View Details</button>
+                                    </td>
+                                </tr>
+
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="font-mono text-sm text-blue-600">ORD-2024-002</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="font-mono text-sm text-gray-400">PENDING</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">+233201987654</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₵89.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            PENDING
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-03-25 14:25:10</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-blue-600 hover:text-blue-900 mr-3">Retry</button>
+                                        <button class="text-orange-600 hover:text-orange-900">Cancel</button>
+                                    </td>
+                                </tr>
+
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="font-mono text-sm text-blue-600">ORD-2024-003</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="font-mono text-sm text-gray-900">MTN20240325003</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">+233267555123</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₵256.80</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            FAILED
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-03-25 14:20:45</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-blue-600 hover:text-blue-900 mr-3">View Details</button>
+                                        <button class="text-green-600 hover:text-green-900">Retry Payment</button>
+                                    </td>
+                                </tr>
+                                <!-- @END_MAP )) -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Reconciliation Job Status -->
+                <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-blue-600 text-lg"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-blue-800">Automatic Reconciliation</h3>
+                            <div class="mt-2 text-sm text-blue-700">
+                                <p>The system automatically reconciles pending payments every 15 minutes. Payments timeout after 10 minutes if no confirmation is received from MTN MoMo.</p>
+                                <p class="mt-1"><strong>Last reconciliation:</strong> <span data-bind="reconciliation.lastRun">2024-03-25 14:30:00</span></p>
+                                <p><strong>Next scheduled:</strong> <span data-bind="reconciliation.nextRun">2024-03-25 14:45:00</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <!-- @END_COMPONENT: PaymentLogs -->
+        </div>
+        <!-- @END_COMPONENT: MainContent -->
+    </div>
+    <!-- @END_COMPONENT: MainDashboard -->
+
+    <!-- @COMPONENT: Modal [product details/edit overlay] -->
+    <div id="productModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Add New Product</h3>
+                        <button class="text-gray-400 hover:text-gray-600" onclick="closeModal()">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <form class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Price (GHS)</label>
+                                <input type="number" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
+                                <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option>Electronics</option>
+                                    <option>Fashion</option>
+                                    <option>Home & Garden</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Product Images</label>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                                <div class="space-y-1 text-center">
+                                    <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl"></i>
+                                    <div class="flex text-sm text-gray-600">
+                                        <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
+                                            <span>Upload files</span>
+                                            <input type="file" class="sr-only" multiple accept="image/*" data-implementation="Handle image upload to S3">
+                                        </label>
+                                        <p class="pl-1">or drag and drop</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Save Product
+                    </button>
+                    <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="closeModal()">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: Modal -->
+
+    <!-- @STATE: currentView:string = 'login' -->
+    <!-- @STATE: isAuthenticated:boolean = false -->
+    <!-- @STATE: sidebarOpen:boolean = false -->
+
+    <script>
+        // TODO: Implement React state management, authentication, and routing
+        
+        (function() {
+            // Simple demo navigation - would be replaced with proper React routing
+            let currentView = 'login';
+            let isAuthenticated = false;
+
+            // Demo login function
+            function handleLogin(event) {
+                event.preventDefault();
+                // TODO: Implement actual authentication logic
+                isAuthenticated = true;
+                showDashboard();
+            }
+
+            function showDashboard() {
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('mainDashboard').classList.remove('hidden');
+                showContent('dashboard');
+            }
+
+            function showContent(contentType) {
+                // Hide all content sections
+                const contents = ['dashboardContent', 'productContent', 'paymentContent'];
+                contents.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) element.classList.add('hidden');
+                });
+
+                // Show selected content
+                const targetContent = contentType + 'Content';
+                const element = document.getElementById(targetContent);
+                if (element) element.classList.remove('hidden');
+
+                // Update navigation active state
+                updateNavigation(contentType);
+            }
+
+            function updateNavigation(activeItem) {
+                // TODO: Implement navigation state management
+                const navItems = document.querySelectorAll('nav a');
+                navItems.forEach(item => {
+                    item.classList.remove('bg-blue-50', 'text-blue-700');
+                    item.classList.add('text-gray-600', 'hover:bg-gray-50', 'hover:text-gray-900');
+                });
+
+                const activeNav = document.querySelector(`nav a[href="#${activeItem}"]`);
+                if (activeNav) {
+                    activeNav.classList.add('bg-blue-50', 'text-blue-700');
+                    activeNav.classList.remove('text-gray-600', 'hover:bg-gray-50', 'hover:text-gray-900');
+                }
+            }
+
+            // Sidebar toggle for mobile
+            function toggleSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('-translate-x-full');
+            }
+
+            // Modal functions
+            window.closeModal = function() {
+                document.getElementById('productModal').classList.add('hidden');
+            };
+
+            // Event listeners
+            document.addEventListener('DOMContentLoaded', function() {
+                // Login form submission
+                const loginForm = document.querySelector('form[data-event="submit:handleLogin"]');
+                if (loginForm) {
+                    loginForm.addEventListener('submit', handleLogin);
+                }
+
+                // Navigation links
+                document.querySelectorAll('nav a').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const target = this.getAttribute('href').substring(1);
+                        showContent(target);
+                    });
+                });
+
+                // Sidebar toggle
+                const sidebarToggle = document.getElementById('sidebarToggle');
+                if (sidebarToggle) {
+                    sidebarToggle.addEventListener('click', toggleSidebar);
+                }
+
+                // Add product button
+                document.querySelectorAll('button').forEach(button => {
+                    if (button.textContent.includes('Add Product') || button.textContent.includes('Add New Product')) {
+                        button.addEventListener('click', function() {
+                            document.getElementById('productModal').classList.remove('hidden');
+                        });
+                    }
+                });
+            });
+
+            // Simulate real-time updates for demo
+            setInterval(function() {
+                if (isAuthenticated) {
+                    // TODO: Implement real-time data updates via WebSocket or polling
+                    // Update metrics, order status, payment reconciliation status, etc.
+                }
+            }, 30000); // Every 30 seconds
+        })();
+    </script>
+</body>
+</html>
