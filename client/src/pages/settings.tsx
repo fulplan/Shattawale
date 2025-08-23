@@ -71,6 +71,48 @@ export default function SettingsPage() {
     }
   });
 
+  // Webhook registration mutation
+  const registerWebhookMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/telegram/register-webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to register webhook');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Webhook Registered",
+        description: `${data.message} - Your bot is now active and ready to receive messages!`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Webhook Registration Failed",
+        description: error.message || "Failed to register webhook. Please check your bot token.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Bot status query
+  const { data: botStatus, refetch: refetchBotStatus } = useQuery({
+    queryKey: ['/api/telegram/status'],
+    queryFn: async () => {
+      const response = await fetch('/api/telegram/status', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch bot status');
+      return response.json();
+    },
+    enabled: false // Only fetch when explicitly requested
+  });
+
   // Load current settings
   useEffect(() => {
     if (Array.isArray(settings)) {
@@ -314,15 +356,81 @@ export default function SettingsPage() {
                     </p>
                   </div>
                   
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                    <div className="flex items-start space-x-2">
-                      <Webhook className="h-4 w-4 text-blue-600 mt-0.5" />
-                      <div className="text-sm">
-                        <p className="font-medium text-blue-900">Webhook Configuration</p>
-                        <p className="text-blue-700">
-                          Your bot token will be saved and webhook will automatically register when you deploy your app to production.
-                        </p>
+                  <div className="space-y-3">
+                    <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                      <div className="flex items-start space-x-2">
+                        <Webhook className="h-4 w-4 text-blue-600 mt-0.5" />
+                        <div className="text-sm">
+                          <p className="font-medium text-blue-900">Webhook Configuration</p>
+                          <p className="text-blue-700">
+                            Your bot webhook will now register in both development and production modes for testing.
+                          </p>
+                        </div>
                       </div>
+                    </div>
+                    
+                    {/* Bot Status and Test Section */}
+                    <div className="border border-gray-200 rounded-md p-4 bg-gray-50">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium text-gray-900">Bot Status & Testing</h4>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => refetchBotStatus()}
+                          className="text-xs"
+                          data-testid="button-check-bot-status"
+                        >
+                          Check Status
+                        </Button>
+                      </div>
+                      
+                      {botStatus && (
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center space-x-2 text-xs">
+                            <div className={`w-2 h-2 rounded-full ${botStatus.configured ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                            <span className={botStatus.configured ? 'text-green-700' : 'text-red-700'}>
+                              Bot Token: {botStatus.configured ? 'Configured' : 'Not Configured'}
+                            </span>
+                          </div>
+                          
+                          {botStatus.webhookInfo && (
+                            <div className="text-xs text-gray-600">
+                              <p>Current Webhook: {botStatus.webhookInfo.url || 'Not set'}</p>
+                              {botStatus.webhookInfo.pending_update_count > 0 && (
+                                <p className="text-yellow-600">Pending updates: {botStatus.webhookInfo.pending_update_count}</p>
+                              )}
+                            </div>
+                          )}
+                          
+                          {botStatus.environment && (
+                            <div className="text-xs text-gray-600">
+                              <p>Mode: {botStatus.environment.isProduction ? 'Production' : 'Development'}</p>
+                              {botStatus.recommendedWebhookUrl && (
+                                <p className="font-mono text-xs bg-gray-100 p-1 rounded mt-1 break-all">
+                                  {botStatus.recommendedWebhookUrl}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => registerWebhookMutation.mutate()}
+                        disabled={registerWebhookMutation.isPending || !telegramBotToken}
+                        className="w-full text-sm bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                        data-testid="button-register-webhook"
+                      >
+                        {registerWebhookMutation.isPending ? "Registering..." : "🚀 Test Webhook Registration"}
+                      </Button>
+                      
+                      <p className="text-xs text-gray-500 mt-2">
+                        This will register your bot webhook in the current environment so you can test bot functionality immediately.
+                      </p>
                     </div>
                   </div>
                   

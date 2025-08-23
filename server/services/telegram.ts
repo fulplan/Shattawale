@@ -495,22 +495,34 @@ Type your question below or contact us directly!
       return false;
     }
     
-    const url = `https://api.telegram.org/bot${botToken}/setWebhook`;
+    const telegramApiUrl = `https://api.telegram.org/bot${botToken}/setWebhook`;
+    const fullWebhookUrl = webhookUrl + this.webhookPath;
     
     try {
-      const response = await fetch(url, {
+      console.log(`🔗 Setting webhook URL: ${fullWebhookUrl}`);
+      
+      const response = await fetch(telegramApiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          url: webhookUrl + this.webhookPath,
-          allowed_updates: ['message', 'callback_query']
+          url: fullWebhookUrl,
+          allowed_updates: ['message', 'callback_query', 'inline_query'],
+          drop_pending_updates: true, // Clear any pending updates
+          secret_token: process.env.TELEGRAM_WEBHOOK_SECRET || undefined
         }),
       });
 
       const result = await response.json();
-      console.log('Webhook set result:', result);
+      console.log('Telegram API response:', result);
+      
+      if (result.ok) {
+        console.log(`✅ Webhook successfully set to: ${fullWebhookUrl}`);
+      } else {
+        console.error(`❌ Failed to set webhook: ${result.description || 'Unknown error'}`);
+      }
+      
       return result.ok;
     } catch (error) {
       console.error('Error setting webhook:', error);

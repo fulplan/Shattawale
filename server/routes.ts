@@ -388,21 +388,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { telegramService } = await import('./services/telegram');
         await telegramService.refreshBotToken();
         
-        // Register webhook with deployment URL if available
-        const deploymentUrl = process.env.REPLIT_DEPLOYMENT_URL;
-        if (deploymentUrl && value) {
-          console.log('Re-registering webhook with new bot token...');
-          console.log('Webhook URL:', deploymentUrl);
-          const webhookSet = await telegramService.setWebhook(deploymentUrl);
+        // Register webhook with available URL (production or development)
+        let webhookUrl = process.env.REPLIT_DEPLOYMENT_URL; // Production URL
+        
+        // If no deployment URL, construct development URL
+        if (!webhookUrl) {
+          const replId = process.env.REPL_ID;
+          const replOwner = process.env.REPL_OWNER;
+          
+          if (replId && replOwner) {
+            // Use Replit development domain format
+            webhookUrl = `https://${replId}--${replOwner}.replit.dev`;
+          } else if (process.env.REPLIT_DOMAINS) {
+            // Use the first domain from REPLIT_DOMAINS
+            const domains = process.env.REPLIT_DOMAINS.split(',');
+            if (domains.length > 0) {
+              webhookUrl = `https://${domains[0].trim()}`;
+            }
+          }
+        }
+        
+        if (webhookUrl && value) {
+          const environment = process.env.REPLIT_DEPLOYMENT_URL ? 'production' : 'development';
+          console.log(`Re-registering webhook with new bot token (${environment} mode)...`);
+          console.log('Webhook URL:', webhookUrl);
+          
+          const webhookSet = await telegramService.setWebhook(webhookUrl);
           console.log('Webhook registration result:', webhookSet);
+          
           if (webhookSet) {
-            console.log('✅ Telegram webhook successfully registered! Your bot is now active.');
+            console.log(`✅ Telegram webhook successfully registered in ${environment} mode! Your bot is now active.`);
+            if (environment === 'development') {
+              console.log('🔧 Development mode: You can now test your bot by sending messages.');
+            }
           } else {
-            console.log('❌ Failed to register webhook. Please check your bot token.');
+            console.log('❌ Failed to register webhook. Please check your bot token and URL accessibility.');
           }
         } else {
-          console.log('ℹ️  Webhook registration skipped: Deploy your app to production to enable webhooks.');
-          console.log('💡 Your bot token has been saved and will automatically register when deployed.');
+          console.log('⚠️  Unable to determine webhook URL. Please check your environment configuration.');
+          console.log('💡 Your bot token has been saved but webhook registration failed.');
         }
       }
 
@@ -431,6 +455,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating system setting:', error);
       res.status(500).json({ error: 'Failed to update setting' });
+    }
+  });
+
+  // Manual Telegram webhook registration endpoint
+  app.post('/api/telegram/register-webhook', requireAuth, async (req, res) => {
+    try {
+      const { telegramService } = await import('./services/telegram');
+      const { WebhookHelper } = await import('./services/webhook-helper');
+      
+      // Log current environment info
+      WebhookHelper.logEnvironmentInfo();
+      
+      const webhookUrl = WebhookHelper.getWebhookUrl();
+      if (!webhookUrl) {
+        return res.status(400).json({ 
+          error: 'Unable to determine webhook URL. Please check environment configuration.',
+          environmentInfo: WebhookHelper.getEnvironmentInfo()
+        });
+      }
+      
+      const botToken = await telegramService.getBotToken();
+      if (!botToken) {
+        return res.status(400).json({ error: 'Bot token not configured' });
+      }
+      
+      console.log('Manual webhook registration requested...');
+      const webhookSet = await telegramService.setWebhook(webhookUrl);
+      
+      if (webhookSet) {
+        const envInfo = WebhookHelper.getEnvironmentInfo();
+        res.json({ 
+          success: true, 
+          message: `Webhook registered successfully in ${envInfo.isProduction ? 'production' : 'development'} mode`,
+          webhookUrl: webhookUrl + telegramService.getWebhookPath(),
+          environment: envInfo
+        });
+      } else {
+        res.status(400).json({ 
+          error: 'Failed to register webhook. Please check bot token and URL accessibility.',
+          webhookUrl
+        });
+      }
+    } catch (error) {
+      console.error('Error registering webhook:', error);
+      res.status(500).json({ error: 'Failed to register webhook' });
+    }
+  });
+
+  // Check Telegram bot status
+  app.get('/api/telegram/status', requireAuth, async (req, res) => {
+    try {
+      const { telegramService } = await import('./services/telegram');
+      const { WebhookHelper } = await import('./services/webhook-helper');
+      
+      const botToken = await telegramService.getBotToken();
+      const envInfo = WebhookHelper.getEnvironmentInfo();
+      
+      if (!botToken) {
+        return res.json({
+          configured: false,
+          message: 'Bot token not configured',
+          environment: envInfo
+        });
+      }
+      
+      // Check webhook info from Telegram
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/getWebhookInfo`);
+        const webhookInfo = await response.json();
+        
+        res.json({
+          configured: true,
+          botToken: botToken ? '***configured***' : 'not set',
+          webhookInfo: webhookInfo.result,
+          environment: envInfo,
+          recommendedWebhookUrl: envInfo.webhookUrl ? envInfo.webhookUrl + telegramService.getWebhookPath() : null
+        });
+      } catch (error) {
+        res.json({
+          configured: true,
+          botToken: '***configured***',
+          error: 'Failed to check webhook status with Telegram API',
+          environment: envInfo
+        });
+      }
+    } catch (error) {
+      console.error('Error checking Telegram status:', error);
+      res.status(500).json({ error: 'Failed to check Telegram status' });
     }
   });
 
