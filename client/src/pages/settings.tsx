@@ -241,9 +241,9 @@ export default function SettingsPage() {
                     <div className="flex items-start space-x-2">
                       <Webhook className="h-4 w-4 text-blue-600 mt-0.5" />
                       <div className="text-sm">
-                        <p className="font-medium text-blue-900">Webhook Status</p>
+                        <p className="font-medium text-blue-900">Webhook Configuration</p>
                         <p className="text-blue-700">
-                          After saving the bot token, the webhook will be automatically configured for your bot.
+                          In development mode, webhooks are not registered. Deploy your app to production to enable automatic webhook configuration for your bot.
                         </p>
                       </div>
                     </div>

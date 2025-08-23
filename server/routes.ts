@@ -312,12 +312,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { telegramService } = await import('./services/telegram');
         await telegramService.refreshBotToken();
         
-        // Re-register webhook if we have a webhook URL
-        const webhookUrl = process.env.REPLIT_DEPLOYMENT_URL || `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
-        if (webhookUrl && value) {
+        // Only register webhook in production with a valid deployment URL
+        const webhookUrl = process.env.REPLIT_DEPLOYMENT_URL;
+        if (webhookUrl && value && process.env.NODE_ENV === 'production') {
           console.log('Re-registering webhook with new bot token...');
           const webhookSet = await telegramService.setWebhook(webhookUrl);
           console.log('Webhook registration result:', webhookSet);
+        } else if (process.env.NODE_ENV === 'development') {
+          console.log('Skipping webhook registration in development mode. Deploy your app to enable webhooks.');
+        } else {
+          console.log('No deployment URL available for webhook registration.');
         }
       }
       
