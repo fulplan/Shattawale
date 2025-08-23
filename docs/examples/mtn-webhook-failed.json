@@ -1,0 +1,16 @@
+{
+  "referenceId": "550e8400-e29b-41d4-a716-446655440001",
+  "externalId": "order:12346:uuid-here",
+  "status": "FAILED",
+  "financialTransactionId": null,
+  "amount": "89.00",
+  "currency": "EUR",
+  "payer": {
+    "partyIdType": "MSISDN",
+    "partyId": "+233201987654"
+  },
+  "payerMessage": "Payment for Order #ORD-20241201-002",
+  "payeeNote": "EcomBot order payment - order:12346:uuid-here",
+  "reason": "INSUFFICIENT_FUNDS",
+  "timestamp": "2024-12-01T14:25:10.456Z"
+}

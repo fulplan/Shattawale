@@ -1,0 +1,16 @@
+{
+  "referenceId": "550e8400-e29b-41d4-a716-446655440000",
+  "externalId": "order:12345:uuid-here",
+  "status": "SUCCESSFUL",
+  "financialTransactionId": "1234567890",
+  "amount": "125.50",
+  "currency": "EUR",
+  "payer": {
+    "partyIdType": "MSISDN",
+    "partyId": "+233244123456"
+  },
+  "payerMessage": "Payment for Order #ORD-20241201-001",
+  "payeeNote": "EcomBot order payment - order:12345:uuid-here",
+  "reason": null,
+  "timestamp": "2024-12-01T14:30:25.123Z"
+}
