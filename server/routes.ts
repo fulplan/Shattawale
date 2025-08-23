@@ -313,11 +313,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await telegramService.refreshBotToken();
         
         // Register webhook with deployment URL if available
-        const webhookUrl = process.env.REPLIT_DEPLOYMENT_URL || `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
-        if (webhookUrl && value) {
+        const deploymentUrl = process.env.REPLIT_DEPLOYMENT_URL;
+        if (deploymentUrl && value) {
           console.log('Re-registering webhook with new bot token...');
-          console.log('Webhook URL:', webhookUrl);
-          const webhookSet = await telegramService.setWebhook(webhookUrl);
+          console.log('Webhook URL:', deploymentUrl);
+          const webhookSet = await telegramService.setWebhook(deploymentUrl);
           console.log('Webhook registration result:', webhookSet);
           if (webhookSet) {
             console.log('✅ Telegram webhook successfully registered! Your bot is now active.');
@@ -325,8 +325,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log('❌ Failed to register webhook. Please check your bot token.');
           }
         } else {
-          console.log('No webhook URL available or bot token missing.');
+          console.log('ℹ️  Webhook registration skipped: Deploy your app to production to enable webhooks.');
+          console.log('💡 Your bot token has been saved and will automatically register when deployed.');
         }
+      }
+
+      // If MTN MoMo settings were updated, refresh the service
+      if (key.startsWith('MTN_')) {
+        console.log('MTN MoMo setting updated, refreshing service...');
+        await mtnMomoService.refreshCredentials();
       }
       
       res.status(201).json(setting);

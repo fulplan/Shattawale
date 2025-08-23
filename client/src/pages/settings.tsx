@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, User, Lock, AlertTriangle, Bot, Webhook } from "lucide-react";
+import { Settings, User, Lock, AlertTriangle, Bot, Webhook, CreditCard, Globe } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -20,6 +20,13 @@ export default function SettingsPage() {
     confirmPassword: ""
   });
   const [telegramBotToken, setTelegramBotToken] = useState("");
+  const [mtnSettings, setMtnSettings] = useState({
+    clientId: "",
+    clientSecret: "",
+    apiBaseUrl: "https://sandbox.momodeveloper.mtn.com",
+    environment: "sandbox",
+    callbackSecret: ""
+  });
   const { user, changePasswordMutation } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -64,13 +71,28 @@ export default function SettingsPage() {
     }
   });
 
-  // Load current telegram bot token from settings
+  // Load current settings
   useEffect(() => {
     if (Array.isArray(settings)) {
       const botTokenSetting = settings.find((s: any) => s.key === 'TELEGRAM_BOT_TOKEN');
       if (botTokenSetting) {
         setTelegramBotToken(botTokenSetting.value || '');
       }
+
+      // Load MTN MoMo settings
+      const mtnClientId = settings.find((s: any) => s.key === 'MTN_CLIENT_ID');
+      const mtnClientSecret = settings.find((s: any) => s.key === 'MTN_CLIENT_SECRET');
+      const mtnApiBaseUrl = settings.find((s: any) => s.key === 'MTN_API_BASE_URL');
+      const mtnEnvironment = settings.find((s: any) => s.key === 'MTN_ENV');
+      const mtnCallbackSecret = settings.find((s: any) => s.key === 'MTN_CALLBACK_SECRET');
+
+      setMtnSettings({
+        clientId: mtnClientId?.value || '',
+        clientSecret: mtnClientSecret?.value || '',
+        apiBaseUrl: mtnApiBaseUrl?.value || 'https://sandbox.momodeveloper.mtn.com',
+        environment: mtnEnvironment?.value || 'sandbox',
+        callbackSecret: mtnCallbackSecret?.value || ''
+      });
     }
   }, [settings]);
 
@@ -90,6 +112,61 @@ export default function SettingsPage() {
       key: 'TELEGRAM_BOT_TOKEN',
       value: telegramBotToken,
       description: 'Telegram bot token for e-commerce bot'
+    });
+  };
+
+  const handleMtnSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!mtnSettings.clientId.trim() || !mtnSettings.clientSecret.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter both Client ID and Client Secret.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Save all MTN settings
+    const promises = [
+      updateSettingMutation.mutateAsync({
+        key: 'MTN_CLIENT_ID',
+        value: mtnSettings.clientId,
+        description: 'MTN MoMo API Client ID'
+      }),
+      updateSettingMutation.mutateAsync({
+        key: 'MTN_CLIENT_SECRET',
+        value: mtnSettings.clientSecret,
+        description: 'MTN MoMo API Client Secret'
+      }),
+      updateSettingMutation.mutateAsync({
+        key: 'MTN_API_BASE_URL',
+        value: mtnSettings.apiBaseUrl,
+        description: 'MTN MoMo API Base URL'
+      }),
+      updateSettingMutation.mutateAsync({
+        key: 'MTN_ENV',
+        value: mtnSettings.environment,
+        description: 'MTN MoMo Environment (sandbox/production)'
+      }),
+      updateSettingMutation.mutateAsync({
+        key: 'MTN_CALLBACK_SECRET',
+        value: mtnSettings.callbackSecret,
+        description: 'MTN MoMo Webhook Callback Secret'
+      })
+    ];
+
+    Promise.all(promises).then(() => {
+      toast({
+        title: "MTN MoMo Settings Updated",
+        description: "Your payment settings have been saved successfully.",
+      });
+    }).catch(() => {
+      toast({
+        title: "Error",
+        description: "Failed to save MTN MoMo settings. Please try again.",
+        variant: "destructive",
+      });
     });
   };
 
@@ -243,7 +320,7 @@ export default function SettingsPage() {
                       <div className="text-sm">
                         <p className="font-medium text-blue-900">Webhook Configuration</p>
                         <p className="text-blue-700">
-                          In development mode, webhooks are not registered. Deploy your app to production to enable automatic webhook configuration for your bot.
+                          Your bot token will be saved and webhook will automatically register when you deploy your app to production.
                         </p>
                       </div>
                     </div>
@@ -256,6 +333,116 @@ export default function SettingsPage() {
                     data-testid="button-save-telegram-bot"
                   >
                     {updateSettingMutation.isPending ? "Saving..." : "Save Bot Token"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* MTN Mobile Money Configuration */}
+            <Card className="bg-white shadow-sm border border-gray-200">
+              <CardHeader className="border-b border-gray-200">
+                <CardTitle className="flex items-center space-x-2">
+                  <CreditCard className="h-5 w-5" />
+                  <span>MTN Mobile Money Configuration</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <form onSubmit={handleMtnSave} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="mtnClientId">Client ID</Label>
+                      <Input
+                        id="mtnClientId"
+                        type="text"
+                        value={mtnSettings.clientId}
+                        onChange={(e) => setMtnSettings({ ...mtnSettings, clientId: e.target.value })}
+                        placeholder="Enter MTN MoMo Client ID"
+                        data-testid="input-mtn-client-id"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="mtnClientSecret">Client Secret</Label>
+                      <Input
+                        id="mtnClientSecret"
+                        type="password"
+                        value={mtnSettings.clientSecret}
+                        onChange={(e) => setMtnSettings({ ...mtnSettings, clientSecret: e.target.value })}
+                        placeholder="Enter MTN MoMo Client Secret"
+                        data-testid="input-mtn-client-secret"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="mtnEnvironment">Environment</Label>
+                      <select
+                        id="mtnEnvironment"
+                        value={mtnSettings.environment}
+                        onChange={(e) => {
+                          const env = e.target.value;
+                          setMtnSettings({ 
+                            ...mtnSettings, 
+                            environment: env,
+                            apiBaseUrl: env === 'production' 
+                              ? 'https://momodeveloper.mtn.com' 
+                              : 'https://sandbox.momodeveloper.mtn.com'
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        data-testid="select-mtn-environment"
+                      >
+                        <option value="sandbox">Sandbox (Testing)</option>
+                        <option value="production">Production (Live)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="mtnApiBaseUrl">API Base URL</Label>
+                      <Input
+                        id="mtnApiBaseUrl"
+                        type="url"
+                        value={mtnSettings.apiBaseUrl}
+                        onChange={(e) => setMtnSettings({ ...mtnSettings, apiBaseUrl: e.target.value })}
+                        placeholder="MTN MoMo API Base URL"
+                        data-testid="input-mtn-api-url"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="mtnCallbackSecret">Webhook Callback Secret</Label>
+                    <Input
+                      id="mtnCallbackSecret"
+                      type="password"
+                      value={mtnSettings.callbackSecret}
+                      onChange={(e) => setMtnSettings({ ...mtnSettings, callbackSecret: e.target.value })}
+                      placeholder="Enter webhook callback secret for payment notifications"
+                      data-testid="input-mtn-callback-secret"
+                    />
+                    <p className="mt-1 text-sm text-gray-500">
+                      Used to verify payment webhook notifications for security
+                    </p>
+                  </div>
+                  
+                  <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                    <div className="flex items-start space-x-2">
+                      <Globe className="h-4 w-4 text-amber-600 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-amber-900">MTN MoMo Developer Account Required</p>
+                        <p className="text-amber-700">
+                          You need to register at <a href="https://momodeveloper.mtn.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">MTN MoMo Developer Portal</a> to get your API credentials.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    disabled={updateSettingMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    data-testid="button-save-mtn-settings"
+                  >
+                    {updateSettingMutation.isPending ? "Saving..." : "Save MTN MoMo Settings"}
                   </Button>
                 </form>
               </CardContent>

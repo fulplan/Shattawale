@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { storage } from '../storage';
 
 interface MTNCollectionRequest {
   amount: string;
@@ -26,24 +27,54 @@ interface MTNTokenResponse {
 }
 
 class MTNMomoService {
-  private clientId: string;
-  private clientSecret: string;
-  private apiBaseUrl: string;
-  private env: string;
-  private callbackSecret: string;
+  private clientId: string = '';
+  private clientSecret: string = '';
+  private apiBaseUrl: string = '';
+  private env: string = '';
+  private callbackSecret: string = '';
   private cachedToken: string | null = null;
   private tokenExpiry: Date | null = null;
 
   constructor() {
-    this.clientId = process.env.MTN_CLIENT_ID || '';
-    this.clientSecret = process.env.MTN_CLIENT_SECRET || '';
-    this.apiBaseUrl = process.env.MTN_API_BASE_URL || 'https://sandbox.momodeveloper.mtn.com';
-    this.env = process.env.MTN_ENV || 'sandbox';
-    this.callbackSecret = process.env.MTN_CALLBACK_SECRET || 'default-webhook-secret';
+    this.initializeCredentials();
+  }
+
+  private async initializeCredentials() {
+    try {
+      // Try to load from database first
+      const clientIdSetting = await storage.getSystemSetting('MTN_CLIENT_ID');
+      const clientSecretSetting = await storage.getSystemSetting('MTN_CLIENT_SECRET');
+      const apiBaseUrlSetting = await storage.getSystemSetting('MTN_API_BASE_URL');
+      const envSetting = await storage.getSystemSetting('MTN_ENV');
+      const callbackSecretSetting = await storage.getSystemSetting('MTN_CALLBACK_SECRET');
+
+      this.clientId = clientIdSetting?.value || process.env.MTN_CLIENT_ID || '';
+      this.clientSecret = clientSecretSetting?.value || process.env.MTN_CLIENT_SECRET || '';
+      this.apiBaseUrl = apiBaseUrlSetting?.value || process.env.MTN_API_BASE_URL || 'https://sandbox.momodeveloper.mtn.com';
+      this.env = envSetting?.value || process.env.MTN_ENV || 'sandbox';
+      this.callbackSecret = callbackSecretSetting?.value || process.env.MTN_CALLBACK_SECRET || 'default-webhook-secret';
+    } catch (error) {
+      console.warn('Could not load MTN MoMo settings from database, using environment variables:', error);
+      
+      this.clientId = process.env.MTN_CLIENT_ID || '';
+      this.clientSecret = process.env.MTN_CLIENT_SECRET || '';
+      this.apiBaseUrl = process.env.MTN_API_BASE_URL || 'https://sandbox.momodeveloper.mtn.com';
+      this.env = process.env.MTN_ENV || 'sandbox';
+      this.callbackSecret = process.env.MTN_CALLBACK_SECRET || 'default-webhook-secret';
+    }
 
     if (!this.clientId || !this.clientSecret) {
       console.warn('MTN MoMo credentials not configured. Payment functionality will be limited.');
     }
+  }
+
+  async refreshCredentials() {
+    console.log('Refreshing MTN MoMo credentials from database...');
+    await this.initializeCredentials();
+    // Clear cached token to force re-authentication
+    this.cachedToken = null;
+    this.tokenExpiry = null;
+    console.log('MTN MoMo credentials refreshed successfully');
   }
 
   private async getAuthToken(): Promise<string> {
