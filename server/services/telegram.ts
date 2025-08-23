@@ -54,11 +54,13 @@ class TelegramService {
         }),
       });
 
+      const responseText = await response.text();
       if (!response.ok) {
-        console.error('Failed to send Telegram message:', await response.text());
+        console.error('Failed to send Telegram message:', responseText);
+        return { ok: false, error: responseText };
       }
 
-      return await response.json();
+      return JSON.parse(responseText);
     } catch (error) {
       console.error('Error sending Telegram message:', error);
       throw error;
@@ -82,7 +84,13 @@ class TelegramService {
         }),
       });
 
-      return await response.json();
+      const responseText = await response.text();
+      if (!response.ok) {
+        console.error('Failed to send Telegram photo:', responseText);
+        return { ok: false, error: responseText };
+      }
+
+      return JSON.parse(responseText);
     } catch (error) {
       console.error('Error sending Telegram photo:', error);
       throw error;
