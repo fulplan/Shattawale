@@ -210,7 +210,7 @@ class TelegramService {
 
   private async handleStartCommand(chatId: number, user: any) {
     const welcomeMessage = `
-🛍️ **Welcome to EcomBot!**
+🛍️ *Welcome to EcomBot!*
 
 Hi ${user.firstName || 'there'}! I'm your personal shopping assistant. 
 
@@ -240,7 +240,7 @@ Let's get started! Use the menu below or type /menu anytime.
 
   private async showMainMenu(chatId: number) {
     const menuMessage = `
-🏠 **Main Menu**
+🏠 *Main Menu*
 
 Choose an option below:
     `;
@@ -278,7 +278,7 @@ Choose an option below:
       { text: category.name, callback_data: `category_${category.id}` }
     ]));
 
-    await this.sendMessage(chatId, '📱 **Product Categories**\n\nChoose a category to browse:', {
+    await this.sendMessage(chatId, '📱 *Product Categories*\n\nChoose a category to browse:', {
       parse_mode: 'Markdown',
       reply_markup: { inline_keyboard: inlineKeyboard }
     });
@@ -294,7 +294,7 @@ Choose an option below:
 
     for (const product of products.slice(0, 10)) { // Show first 10 products
       const message = `
-🛍️ **${product.title}**
+🛍️ *${product.title}*
 
 💰 Price: ₵${product.priceGhs}
 📦 Stock: ${product.stock} available
@@ -331,16 +331,16 @@ ${product.description || 'No description available'}
     }
 
     const message = `
-🛍️ **${product.title}**
+🛍️ *${product.title}*
 
-💰 **Price:** ₵${product.priceGhs}
-📦 **Stock:** ${product.stock} available
-📋 **SKU:** ${product.sku}
+💰 *Price:* ₵${product.priceGhs}
+📦 *Stock:* ${product.stock} available
+📋 *SKU:* ${product.sku}
 
-📝 **Description:**
+📝 *Description:*
 ${product.description || 'No description available'}
 
-${product.tags && product.tags.length > 0 ? `🏷️ **Tags:** ${product.tags.join(', ')}` : ''}
+${product.tags && product.tags.length > 0 ? `🏷️ *Tags:* ${product.tags.join(', ')}` : ''}
     `;
 
     const keyboard = [
@@ -371,7 +371,7 @@ ${product.tags && product.tags.length > 0 ? `🏷️ **Tags:** ${product.tags.jo
       return;
     }
 
-    await this.sendMessage(chatId, `✅ **${product.title}** added to your cart!\n\n💰 Price: ₵${product.priceGhs}`, {
+    await this.sendMessage(chatId, `✅ *${product.title}* added to your cart!\n\n💰 Price: ₵${product.priceGhs}`, {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [
@@ -387,7 +387,7 @@ ${product.tags && product.tags.length > 0 ? `🏷️ **Tags:** ${product.tags.jo
 
   private async showCart(chatId: number, userId: string) {
     // Placeholder for cart functionality
-    await this.sendMessage(chatId, '🛒 **Your Cart**\n\nYour cart is currently empty.\nUse /browse to start shopping!', {
+    await this.sendMessage(chatId, '🛒 *Your Cart*\n\nYour cart is currently empty.\nUse /browse to start shopping!', {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [
@@ -401,13 +401,13 @@ ${product.tags && product.tags.length > 0 ? `🏷️ **Tags:** ${product.tags.jo
     const orders = await storage.getOrdersByUserId(userId);
     
     if (orders.length === 0) {
-      await this.sendMessage(chatId, '📦 **Your Orders**\n\nYou haven\'t placed any orders yet.\nStart shopping to see your orders here!', {
+      await this.sendMessage(chatId, '📦 *Your Orders*\n\nYou haven\'t placed any orders yet.\nStart shopping to see your orders here!', {
         parse_mode: 'Markdown'
       });
       return;
     }
 
-    let ordersText = '📦 **Your Recent Orders**\n\n';
+    let ordersText = '📦 *Your Recent Orders*\n\n';
     
     for (const order of orders.slice(0, 5)) {
       ordersText += `🆔 Order: ${order.orderNumber}\n`;
@@ -421,15 +421,15 @@ ${product.tags && product.tags.length > 0 ? `🏷️ **Tags:** ${product.tags.jo
 
   private async showSupport(chatId: number) {
     const supportMessage = `
-💬 **Customer Support**
+💬 *Customer Support*
 
 Need help? Our support team is here for you!
 
-📧 **Email:** support@ecombot.gh
-📱 **Phone:** +233 XXX XXX XXX
-⏰ **Hours:** Mon-Fri, 9AM-6PM GMT
+📧 *Email:* support@ecombot.gh
+📱 *Phone:* +233 XXX XXX XXX
+⏰ *Hours:* Mon-Fri, 9AM-6PM GMT
 
-**Common Questions:**
+*Common Questions:*
 • How to pay with MTN MoMo?
 • Order status and tracking
 • Product returns and refunds
@@ -442,15 +442,15 @@ Type your question below or contact us directly!
   }
 
   private async startCheckout(chatId: number, userId?: string) {
-    const message = `💳 **Checkout - MTN Mobile Money Payment**
+    const message = `💳 *Checkout - MTN Mobile Money Payment*
 
 To complete your purchase, please provide your MTN Mobile Money number.
 
-📱 **Supported formats:**
+📱 *Supported formats:*
 • +233XXXXXXXXX (e.g., +233244123456)
 • 0XXXXXXXXX (e.g., 0244123456)
 
-💰 **Payment Details:**
+💰 *Payment Details:*
 • Amount: ₵25.00 (example)
 • Method: MTN Mobile Money
 • Currency: GHS (Ghana Cedis)
@@ -486,7 +486,7 @@ Please reply with your phone number:`;
     } else if (text.includes('support') || text.includes('💬')) {
       await this.showSupport(chatId);
     } else if (text.includes('search') || text.includes('🔍')) {
-      await this.sendMessage(chatId, '🔍 **Search Products**\n\nSearch functionality coming soon!\nFor now, use /browse to explore our categories.', {
+      await this.sendMessage(chatId, '🔍 *Search Products*\n\nSearch functionality coming soon!\nFor now, use /browse to explore our categories.', {
         parse_mode: 'Markdown'
       });
     } else {
@@ -511,7 +511,7 @@ Please reply with your phone number:`;
   private async showSearchResults(chatId: number, products: any[]) {
     for (const product of products.slice(0, 5)) {
       const message = `
-🛍️ **${product.title}**
+🛍️ *${product.title}*
 💰 ₵${product.priceGhs} | 📦 ${product.stock} in stock
       `;
 
@@ -588,16 +588,16 @@ Please reply with your phone number:`;
         return;
       }
 
-      const orderMessage = `📦 **Order Details**
+      const orderMessage = `📦 *Order Details*
 
-🆔 **Order ID:** ${order.id.substring(0, 8)}
-📋 **Order Number:** ${order.orderNumber}
-💰 **Total:** ₵${order.totalGhs}
-📊 **Status:** ${order.status}
-📱 **Phone:** ${order.customerPhone || 'N/A'}
-📅 **Date:** ${order.createdAt.toLocaleDateString()}
+🆔 *Order ID:* ${order.id.substring(0, 8)}
+📋 *Order Number:* ${order.orderNumber}
+💰 *Total:* ₵${order.totalGhs}
+📊 *Status:* ${order.status}
+📱 *Phone:* ${order.customerPhone || 'N/A'}
+📅 *Date:* ${order.createdAt.toLocaleDateString()}
 
-${order.notes ? `📝 **Notes:** ${order.notes}\n\n` : ''}📍 **Delivery Address:**
+${order.notes ? `📝 *Notes:* ${order.notes}\n\n` : ''}📍 *Delivery Address:*
 ${order.address ? Object.values(order.address).join(', ') : 'Not provided'}`;
 
       await this.sendMessage(chatId, orderMessage, {
@@ -690,9 +690,9 @@ ${order.address ? Object.values(order.address).join(', ') : 'Not provided'}`;
 ⏰ *Important:* This payment request expires in 10 minutes.
 
 If you don't receive the prompt, please check that:
-✓ Your phone number is correct
-✓ You have sufficient balance
-✓ MTN MoMo service is active`;
+• Your phone number is correct
+• You have sufficient balance
+• MTN MoMo service is active`;
 
         await this.sendMessage(chatId, successMessage, {
           parse_mode: 'Markdown',
