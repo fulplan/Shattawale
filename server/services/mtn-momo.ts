@@ -42,13 +42,13 @@ class MTNMomoService {
   private async initializeCredentials() {
     try {
       // Try to load from database first
-      const primaryKeySetting = await storage.getSystemSetting('MTN_PRIMARY_KEY');
-      const secondaryKeySetting = await storage.getSystemSetting('MTN_SECONDARY_KEY');
       const userIdSetting = await storage.getSystemSetting('MTN_USER_ID');
+      const primaryKeySetting = await storage.getSystemSetting('MTN_PRIMARY_KEY');
       const apiBaseUrlSetting = await storage.getSystemSetting('MTN_API_BASE_URL');
       const envSetting = await storage.getSystemSetting('MTN_ENV');
       const callbackSecretSetting = await storage.getSystemSetting('MTN_CALLBACK_SECRET');
 
+      // Use User ID as clientId and Primary Key as clientSecret
       this.clientId = userIdSetting?.value || process.env.MTN_COLLECTION_USER_ID || '';
       this.clientSecret = primaryKeySetting?.value || process.env.MTN_COLLECTION_API_KEY || '';
       this.apiBaseUrl = apiBaseUrlSetting?.value || process.env.MTN_API_BASE_URL || 'https://sandbox.momodeveloper.mtn.com';
@@ -92,6 +92,21 @@ class MTNMomoService {
       if (!subscriptionKey) {
         throw new Error('MTN subscription key not configured');
       }
+      
+      if (!this.clientId || !this.clientSecret) {
+        console.error('MTN credentials debug:', {
+          clientId: this.clientId ? 'SET' : 'MISSING',
+          clientSecret: this.clientSecret ? 'SET' : 'MISSING',
+          subscriptionKey: subscriptionKey ? 'SET' : 'MISSING'
+        });
+        throw new Error('MTN User ID and Primary Key are required for authentication');
+      }
+      
+      console.log('MTN Auth attempt with credentials:', {
+        clientId: this.clientId?.substring(0, 8) + '...',
+        hasSecret: !!this.clientSecret,
+        hasSubscriptionKey: !!subscriptionKey
+      });
 
       const credentials = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
       

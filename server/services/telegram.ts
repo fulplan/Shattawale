@@ -620,14 +620,14 @@ ${order.address ? Object.values(order.address).join(', ') : 'Not provided'}`;
       // Validate phone number format
       const phoneRegex = /^(?:\+233|0)\d{9}$/;
       if (!phoneRegex.test(phoneNumber)) {
-        await this.sendMessage(chatId, '❌ **Invalid Phone Number Format**\n\nPlease use one of these formats:\n• +233XXXXXXXXX (e.g., +233244123456)\n• 0XXXXXXXXX (e.g., 0244123456)\n\nTry again:', {
+        await this.sendMessage(chatId, '❌ *Invalid Phone Number Format*\n\nPlease use one of these formats:\n• +233XXXXXXXXX (e.g., +233244123456)\n• 0XXXXXXXXX (e.g., 0244123456)\n\nTry again:', {
           parse_mode: 'Markdown'
         });
         return;
       }
 
       // Show processing message
-      await this.sendMessage(chatId, '⏳ **Processing Payment Request...**\n\nSetting up your MTN Mobile Money payment...', {
+      await this.sendMessage(chatId, '⏳ *Processing Payment Request...*\n\nSetting up your MTN Mobile Money payment...', {
         parse_mode: 'Markdown'
       });
 
@@ -675,19 +675,19 @@ ${order.address ? Object.values(order.address).join(', ') : 'Not provided'}`;
         });
 
         // Success message with payment instructions
-        const successMessage = `✅ **Payment Request Sent!**
+        const successMessage = `✅ *Payment Request Sent!*
 
-📱 **Next Steps:**
+📱 *Next Steps:*
 1. Check your phone (${phoneNumber}) for MTN MoMo prompt
 2. Enter your MTN MoMo PIN to complete payment
 3. You'll receive confirmation once payment is successful
 
-💰 **Payment Details:**
+💰 *Payment Details:*
 • Amount: ₵${amount}
 • Reference: ${externalId}
 • Order ID: ${order.id.substring(0, 8)}
 
-⏰ **Important:** This payment request expires in 10 minutes.
+⏰ *Important:* This payment request expires in 10 minutes.
 
 If you don't receive the prompt, please check that:
 ✓ Your phone number is correct
@@ -706,7 +706,7 @@ If you don't receive the prompt, please check that:
 
       } else {
         // Payment initiation failed
-        await this.sendMessage(chatId, `❌ **Payment Request Failed**\n\n${collectionResult.error || 'Unable to process payment at this time.'}\n\nPlease try again or contact support if the problem persists.`, {
+        await this.sendMessage(chatId, `❌ *Payment Request Failed*\n\n${collectionResult.error || 'Unable to process payment at this time.'}\n\nPlease try again or contact support if the problem persists.`, {
           parse_mode: 'Markdown',
           reply_markup: {
             inline_keyboard: [
@@ -719,7 +719,7 @@ If you don't receive the prompt, please check that:
 
     } catch (error) {
       console.error('Error processing payment:', error);
-      await this.sendMessage(chatId, '❌ **Error Processing Payment**\n\nSomething went wrong. Please try again or contact support.', {
+      await this.sendMessage(chatId, '❌ *Error Processing Payment*\n\nSomething went wrong. Please try again or contact support.', {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
