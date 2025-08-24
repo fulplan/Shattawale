@@ -195,7 +195,16 @@ class TelegramService {
       const productId = data.replace('add_to_cart_', '');
       await this.addToCart(chatId, productId);
     } else if (data.startsWith('checkout')) {
-      await this.startCheckout(chatId);
+      await this.startCheckout(chatId, callbackQuery.from.id.toString());
+    } else if (data === 'main_menu') {
+      // Get user from database
+      const dbUser = await storage.getUserByTelegramId(callbackQuery.from.id.toString());
+      if (dbUser) {
+        await this.handleStartCommand(chatId, dbUser);
+      }
+    } else if (data.startsWith('order_status_')) {
+      const orderId = data.replace('order_status_', '');
+      await this.showOrderStatus(chatId, orderId);
     }
   }
 
@@ -432,13 +441,42 @@ Type your question below or contact us directly!
     await this.sendMessage(chatId, supportMessage, { parse_mode: 'Markdown' });
   }
 
-  private async startCheckout(chatId: number) {
-    await this.sendMessage(chatId, '💳 **Checkout Process**\n\nCheckout functionality is under development.\nYou will be able to pay securely with MTN Mobile Money soon!', {
-      parse_mode: 'Markdown'
+  private async startCheckout(chatId: number, userId?: string) {
+    const message = `💳 **Checkout - MTN Mobile Money Payment**
+
+To complete your purchase, please provide your MTN Mobile Money number.
+
+📱 **Supported formats:**
+• +233XXXXXXXXX (e.g., +233244123456)
+• 0XXXXXXXXX (e.g., 0244123456)
+
+💰 **Payment Details:**
+• Amount: ₵25.00 (example)
+• Method: MTN Mobile Money
+• Currency: GHS (Ghana Cedis)
+
+Please reply with your phone number:`;
+
+    await this.sendMessage(chatId, message, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        force_reply: true,
+        input_field_placeholder: 'Enter your MTN MoMo number (e.g., 0244123456)'
+      }
     });
+
+    // Simplified checkout - show instructions for phone number input
+    console.log('Checkout initiated for user:', userId);
   }
 
   private async handleTextMessage(chatId: number, text: string, user: any) {
+    // Check if this looks like a phone number for payment processing
+    const phoneRegex = /^(?:\+233|0)\d{9}$/;
+    if (phoneRegex.test(text.trim())) {
+      await this.processPayment(chatId, text.trim(), user);
+      return;
+    }
+    
     if (text.includes('browse') || text.includes('📱')) {
       await this.showCategories(chatId);
     } else if (text.includes('cart') || text.includes('🛒')) {
@@ -539,6 +577,118 @@ Type your question below or contact us directly!
 
   getWebhookPath() {
     return this.webhookPath;
+  }
+
+  private async processPayment(chatId: number, phoneNumber: string, user: any) {
+    try {
+      // Validate phone number format
+      const phoneRegex = /^(?:\+233|0)\d{9}$/;
+      if (!phoneRegex.test(phoneNumber)) {
+        await this.sendMessage(chatId, '❌ **Invalid Phone Number Format**\n\nPlease use one of these formats:\n• +233XXXXXXXXX (e.g., +233244123456)\n• 0XXXXXXXXX (e.g., 0244123456)\n\nTry again:', {
+          parse_mode: 'Markdown'
+        });
+        return;
+      }
+
+      // Show processing message
+      await this.sendMessage(chatId, '⏳ **Processing Payment Request...**\n\nSetting up your MTN Mobile Money payment...', {
+        parse_mode: 'Markdown'
+      });
+
+      // Import MTN MoMo service
+      const { mtnMomoService } = await import('./mtn-momo');
+      
+      // Payment details (demo values)
+      const amount = '25.00';
+      const description = 'EcomBot Purchase';
+      const externalId = `ecom_${Date.now()}_${chatId}`;
+      
+      // Initiate MTN MoMo collection
+      const collectionResult = await mtnMomoService.initiateCollection(
+        amount,
+        phoneNumber,
+        externalId,
+        description
+      );
+
+      if (collectionResult.success) {
+        // Create order and payment records
+        const order = await storage.createOrder({
+          telegramUserId: user.telegramId,
+          customerPhone: phoneNumber,
+          totalGhs: amount,
+          status: 'PENDING',
+          deliveryAddress: 'TBD', // Would normally collect this
+          items: [], // Would normally come from cart
+        });
+
+        const payment = await storage.createPayment({
+          orderId: order.id,
+          provider: 'mtn_momo',
+          amountGhs: amount,
+          currency: 'GHS',
+          status: 'PENDING',
+          providerReference: collectionResult.referenceId,
+          externalId,
+          customerPhone: phoneNumber,
+          idempotencyKey: `payment_${externalId}`,
+        });
+
+        // Success message with payment instructions
+        const successMessage = `✅ **Payment Request Sent!**
+
+📱 **Next Steps:**
+1. Check your phone (${phoneNumber}) for MTN MoMo prompt
+2. Enter your MTN MoMo PIN to complete payment
+3. You'll receive confirmation once payment is successful
+
+💰 **Payment Details:**
+• Amount: ₵${amount}
+• Reference: ${externalId}
+• Order ID: ${order.id.substring(0, 8)}
+
+⏰ **Important:** This payment request expires in 10 minutes.
+
+If you don't receive the prompt, please check that:
+✓ Your phone number is correct
+✓ You have sufficient balance
+✓ MTN MoMo service is active`;
+
+        await this.sendMessage(chatId, successMessage, {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '📦 Check Order Status', callback_data: `order_status_${order.id}` }],
+              [{ text: '🏠 Back to Main Menu', callback_data: 'main_menu' }]
+            ]
+          }
+        });
+
+      } else {
+        // Payment initiation failed
+        await this.sendMessage(chatId, `❌ **Payment Request Failed**\n\n${collectionResult.error || 'Unable to process payment at this time.'}\n\nPlease try again or contact support if the problem persists.`, {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔄 Try Again', callback_data: 'checkout' }],
+              [{ text: '💬 Contact Support', callback_data: 'support' }]
+            ]
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      await this.sendMessage(chatId, '❌ **Error Processing Payment**\n\nSomething went wrong. Please try again or contact support.', {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔄 Try Again', callback_data: 'checkout' }],
+            [{ text: '💬 Contact Support', callback_data: 'support' }]
+          ]
+        }
+      });
+    }
   }
 }
 

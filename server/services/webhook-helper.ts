@@ -7,7 +7,7 @@ export class WebhookHelper {
       return process.env.REPLIT_DEPLOYMENT_URL;
     }
     
-    // Priority 2: Custom domain from REPLIT_DOMAINS
+    // Priority 2: REPLIT_DOMAINS (most reliable for development)
     if (process.env.REPLIT_DOMAINS) {
       const domains = process.env.REPLIT_DOMAINS.split(',');
       if (domains.length > 0) {
@@ -16,7 +16,7 @@ export class WebhookHelper {
       }
     }
     
-    // Priority 3: Development URL using REPL_ID and REPL_OWNER
+    // Priority 3: Development URL using REPL_ID and REPL_OWNER (less reliable)
     if (process.env.REPL_ID && process.env.REPL_OWNER) {
       return `https://${process.env.REPL_ID}--${process.env.REPL_OWNER}.replit.dev`;
     }

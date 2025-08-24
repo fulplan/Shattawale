@@ -388,25 +388,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { telegramService } = await import('./services/telegram');
         await telegramService.refreshBotToken();
         
-        // Register webhook with available URL (production or development)
+        // Register webhook using correct URL priority
         let webhookUrl = process.env.REPLIT_DEPLOYMENT_URL; // Production URL
         
-        // If no deployment URL, construct development URL
+        // If no deployment URL, use development URL with correct priority
         if (!webhookUrl) {
-          const replId = process.env.REPL_ID;
-          const replOwner = process.env.REPL_OWNER;
-          
-          if (replId && replOwner) {
-            // Use Replit development domain format
-            webhookUrl = `https://${replId}--${replOwner}.replit.dev`;
-          } else if (process.env.REPLIT_DOMAINS) {
-            // Use the first domain from REPLIT_DOMAINS
+          // Priority 1: Use REPLIT_DOMAINS (most reliable for development)
+          if (process.env.REPLIT_DOMAINS) {
             const domains = process.env.REPLIT_DOMAINS.split(',');
             if (domains.length > 0) {
               webhookUrl = `https://${domains[0].trim()}`;
             }
+          } 
+          // Priority 2: Fallback to REPL_ID and REPL_OWNER format (less reliable)
+          else if (process.env.REPL_ID && process.env.REPL_OWNER) {
+            webhookUrl = `https://${process.env.REPL_ID}--${process.env.REPL_OWNER}.replit.dev`;
           }
         }
+        
+        console.log('🌐 Environment info:');
+        console.log('   REPLIT_DOMAINS:', process.env.REPLIT_DOMAINS);
+        console.log('   REPL_ID:', process.env.REPL_ID);
+        console.log('   REPL_OWNER:', process.env.REPL_OWNER);
+        console.log('   Final webhook URL:', webhookUrl);
         
         if (webhookUrl && value) {
           const environment = process.env.REPLIT_DEPLOYMENT_URL ? 'production' : 'development';
