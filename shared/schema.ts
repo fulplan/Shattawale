@@ -78,6 +78,7 @@ export const orders = pgTable("orders", {
   totalGhs: decimal("total_ghs", { precision: 10, scale: 2 }).notNull(),
   shippingGhs: decimal("shipping_ghs", { precision: 10, scale: 2 }).notNull().default('10.00'),
   address: json("address").$type<Record<string, any>>(),
+  deliveryAddress: text("delivery_address"),
   customerPhone: text("customer_phone"),
   notes: text("notes"),
   trackingNumber: text("tracking_number"),
@@ -128,6 +129,17 @@ export const coupons = pgTable("coupons", {
   isActive: boolean("is_active").notNull().default(true),
   startsAt: timestamp("starts_at"),
   expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Bot Commands Table
+export const botCommands = pgTable("bot_commands", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  command: text("command").notNull().unique(),
+  description: text("description").notNull(),
+  response: text("response").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -293,3 +305,8 @@ export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+
+// Bot Commands Schemas
+export const insertBotCommandSchema = createInsertSchema(botCommands);
+export type BotCommand = typeof botCommands.$inferSelect;
+export type InsertBotCommand = z.infer<typeof insertBotCommandSchema>;

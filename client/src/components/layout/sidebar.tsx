@@ -10,7 +10,8 @@ import {
   CreditCard, 
   Tags, 
   Settings, 
-  User 
+  User,
+  MessageSquare 
 } from "lucide-react";
 
 const navigation = [
@@ -20,6 +21,7 @@ const navigation = [
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Payments", href: "/payments", icon: CreditCard },
   { name: "Coupons", href: "/coupons", icon: Tags },
+  { name: "Bot Commands", href: "/bot-commands", icon: MessageSquare },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

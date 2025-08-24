@@ -25,9 +25,17 @@ interface TelegramUpdate {
   callback_query?: any;
 }
 
+interface CheckoutSession {
+  step: 'address' | 'phone' | 'complete';
+  deliveryAddress?: string;
+  phoneNumber?: string;
+  userId: string;
+}
+
 class TelegramService {
   private botToken: string = '';
   private webhookPath: string;
+  private checkoutSessions: Map<number, CheckoutSession> = new Map();
 
   constructor() {
     this.initializeBotToken();
@@ -196,6 +204,8 @@ class TelegramService {
       await this.addToCart(chatId, productId);
     } else if (data.startsWith('checkout')) {
       await this.startCheckout(chatId, callbackQuery.from.id.toString());
+    } else if (data === 'browse_categories') {
+      await this.showCategories(chatId);
     } else if (data === 'main_menu') {
       // Get user from database
       const dbUser = await storage.getUserByTelegramId(callbackQuery.from.id.toString());
@@ -442,20 +452,76 @@ Type your question below or contact us directly!
   }
 
   private async startCheckout(chatId: number, userId?: string) {
-    const message = `💳 *Checkout - MTN Mobile Money Payment*
+    if (!userId) {
+      await this.sendMessage(chatId, '❌ Unable to start checkout. Please try again.');
+      return;
+    }
 
-To complete your purchase, please provide your MTN Mobile Money number.
+    // Initialize checkout session
+    this.checkoutSessions.set(chatId, {
+      step: 'address',
+      userId
+    });
 
-📱 *Supported formats:*
-• +233XXXXXXXXX (e.g., +233244123456)
-• 0XXXXXXXXX (e.g., 0244123456)
+    const message = `📍 *Delivery Address Required*
 
-💰 *Payment Details:*
-• Amount: ₵25.00 (example)
-• Method: MTN Mobile Money
-• Currency: GHS (Ghana Cedis)
+Before we process your payment, please provide your complete delivery address.
 
-Please reply with your phone number:`;
+📝 *Please include:*
+• House number and street name
+• Area/Neighborhood
+• City
+• Region
+• Any special delivery instructions
+
+💰 *Order Total:* ₵25.00 (example)
+
+Please type your full delivery address:`;
+
+    await this.sendMessage(chatId, message, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        force_reply: true,
+        input_field_placeholder: 'Enter your complete delivery address...'
+      }
+    });
+
+    console.log('Checkout initiated for user:', userId);
+  }
+
+  private async handleCheckoutStep(chatId: number, text: string, session: CheckoutSession, user: any) {
+    switch (session.step) {
+      case 'address':
+        await this.handleAddressInput(chatId, text, session);
+        break;
+      case 'phone':
+        await this.handlePhoneInput(chatId, text, session, user);
+        break;
+      default:
+        // Reset session if in unknown state
+        this.checkoutSessions.delete(chatId);
+        await this.sendMessage(chatId, '❌ Something went wrong. Please start checkout again.');
+    }
+  }
+
+  private async handleAddressInput(chatId: number, address: string, session: CheckoutSession) {
+    if (address.length < 10) {
+      await this.sendMessage(chatId, '⚠️ *Address Too Short*\n\nPlease provide a more complete address with street, area, and city.', {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          force_reply: true,
+          input_field_placeholder: 'Enter your complete delivery address...'
+        }
+      });
+      return;
+    }
+
+    // Save address and move to phone step
+    session.deliveryAddress = address;
+    session.step = 'phone';
+    this.checkoutSessions.set(chatId, session);
+
+    const message = `✅ *Address Confirmed*\n\n📍 *Delivery Address:*\n${address}\n\n📱 *Phone Number Required*\n\nNow please provide your MTN Mobile Money number for payment.\n\n*Supported formats:*\n• +233XXXXXXXXX (e.g., +233244123456)\n• 0XXXXXXXXX (e.g., 0244123456)\n\nPlease reply with your phone number:`;
 
     await this.sendMessage(chatId, message, {
       parse_mode: 'Markdown',
@@ -464,13 +530,154 @@ Please reply with your phone number:`;
         input_field_placeholder: 'Enter your MTN MoMo number (e.g., 0244123456)'
       }
     });
+  }
 
-    // Simplified checkout - show instructions for phone number input
-    console.log('Checkout initiated for user:', userId);
+  private async handlePhoneInput(chatId: number, phone: string, session: CheckoutSession, user: any) {
+    const phoneRegex = /^(?:\+233|0)\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      await this.sendMessage(chatId, '⚠️ *Invalid Phone Number*\n\nPlease enter a valid Ghana phone number.\n\n*Examples:*\n• +233244123456\n• 0244123456', {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          force_reply: true,
+          input_field_placeholder: 'Enter your MTN MoMo number (e.g., 0244123456)'
+        }
+      });
+      return;
+    }
+
+    // Save phone and complete checkout
+    session.phoneNumber = phone;
+    session.step = 'complete';
+    
+    // Process payment with collected information
+    await this.processPaymentWithAddress(chatId, phone, session.deliveryAddress!, user);
+    
+    // Clear session
+    this.checkoutSessions.delete(chatId);
+  }
+
+  private async processPaymentWithAddress(chatId: number, phoneNumber: string, deliveryAddress: string, user: any) {
+    try {
+      // Import MTN MoMo service
+      const { mtnMomoService } = await import('./mtn-momo');
+      
+      // Payment details (demo values)
+      const amount = '25.00';
+      const description = 'EcomBot Purchase';
+      const externalId = `ecom_${Date.now()}_${chatId}`;
+      
+      // Initiate MTN MoMo collection
+      const collectionResult = await mtnMomoService.initiateCollection(
+        amount,
+        phoneNumber,
+        externalId,
+        description
+      );
+
+      if (collectionResult.success) {
+        // Parse delivery address into components
+        const addressComponents = this.parseAddress(deliveryAddress);
+        
+        // Create order with delivery address
+        const order = await storage.createOrder({
+          userId: user.id,
+          customerPhone: phoneNumber,
+          totalGhs: amount,
+          status: 'PENDING' as const,
+          address: addressComponents,
+          notes: `Delivery Address: ${deliveryAddress}` // Store address in notes for now
+        });
+
+        const payment = await storage.createPayment({
+          orderId: order.id,
+          provider: 'mtn_momo',
+          amountGhs: amount,
+          currency: 'GHS',
+          status: 'PENDING' as const,
+          providerReference: collectionResult.referenceId,
+          externalId,
+          customerPhone: phoneNumber,
+          idempotencyKey: `payment_${externalId}`
+        });
+
+        // Success message with payment instructions
+        const successMessage = `✅ *Payment Request Sent!*
+
+📱 *Next Steps:*
+1. Check your phone (${phoneNumber}) for MTN MoMo prompt
+2. Enter your MTN MoMo PIN to complete payment
+3. You'll receive confirmation once payment is successful
+
+💰 *Payment Details:*
+• Amount: ₵${amount}
+• Reference: ${externalId}
+• Order ID: ${order.id.substring(0, 8)}
+
+📍 *Delivery Address:*
+${deliveryAddress}
+
+⏰ *Important:* This payment request expires in 10 minutes.`;
+
+        await this.sendMessage(chatId, successMessage, {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '📦 Check Order Status', callback_data: `order_status_${order.id}` }],
+              [{ text: '🏠 Back to Main Menu', callback_data: 'main_menu' }]
+            ]
+          }
+        });
+
+      } else {
+        // Payment initiation failed
+        await this.sendMessage(chatId, `❌ *Payment Request Failed*\n\n${collectionResult.error || 'Unable to process payment at this time.'}\n\nPlease try again or contact support if the problem persists.`, {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔄 Try Again', callback_data: 'checkout' }],
+              [{ text: '💬 Contact Support', callback_data: 'support' }]
+            ]
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('Error processing payment with address:', error);
+      await this.sendMessage(chatId, '❌ *Error Processing Payment*\n\nSomething went wrong. Please try again or contact support.', {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔄 Try Again', callback_data: 'checkout' }],
+            [{ text: '💬 Contact Support', callback_data: 'support' }]
+          ]
+        }
+      });
+    }
+  }
+
+  private parseAddress(fullAddress: string): Record<string, any> {
+    // Simple address parsing - can be enhanced with more sophisticated logic
+    const lines = fullAddress.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
+    return {
+      fullAddress: fullAddress,
+      street: lines[0] || '',
+      area: lines.length > 1 ? lines[1] : '',
+      city: lines.length > 2 ? lines[2] : 'Accra',
+      region: lines.length > 3 ? lines[3] : 'Greater Accra',
+      country: 'Ghana'
+    };
   }
 
   private async handleTextMessage(chatId: number, text: string, user: any) {
-    // Check if this looks like a phone number for payment processing
+    // Check if user is in checkout flow
+    const checkoutSession = this.checkoutSessions.get(chatId);
+    if (checkoutSession) {
+      await this.handleCheckoutStep(chatId, text.trim(), checkoutSession, user);
+      return;
+    }
+    
+    // Check if this looks like a phone number for payment processing (legacy support)
     const phoneRegex = /^(?:\+233|0)\d{9}$/;
     if (phoneRegex.test(text.trim())) {
       await this.processPayment(chatId, text.trim(), user);

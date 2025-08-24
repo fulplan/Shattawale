@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -16,11 +17,18 @@ export default function Orders() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
   const { toast } = useToast();
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["/api/orders"],
   });
+
+  const handleViewOrder = (order: any) => {
+    setSelectedOrder(order);
+    setShowOrderDetails(true);
+  };
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ orderId, updates }: { orderId: string; updates: any }) => {
@@ -43,7 +51,7 @@ export default function Orders() {
     },
   });
 
-  const filteredOrders = orders.filter((order: any) => {
+  const filteredOrders = (orders as any[]).filter((order: any) => {
     const matchesSearch = 
       order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.customerPhone?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -277,6 +285,7 @@ export default function Orders() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => handleViewOrder(order)}
                             className="text-blue-600 hover:text-blue-900 mr-2"
                             data-testid={`button-view-${order.id}`}
                           >
@@ -305,6 +314,70 @@ export default function Orders() {
           </Card>
         </main>
       </div>
+
+      {/* Order Details Modal */}
+      <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Order Details</DialogTitle>
+            <DialogDescription>
+              Detailed information for order #{selectedOrder?.orderNumber}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Order ID</Label>
+                  <p className="mt-1 text-sm text-gray-900">{selectedOrder.id}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Order Number</Label>
+                  <p className="mt-1 text-sm text-gray-900">{selectedOrder.orderNumber}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Customer Phone</Label>
+                  <p className="mt-1 text-sm text-gray-900">{selectedOrder.customerPhone || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Total Amount</Label>
+                  <p className="mt-1 text-sm font-semibold text-gray-900">₵{parseFloat(selectedOrder.totalGhs || '0').toFixed(2)}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Status</Label>
+                  <Badge className={`${getStatusColor(selectedOrder.status)} mt-1`}>
+                    {selectedOrder.status}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Date Created</Label>
+                  <p className="mt-1 text-sm text-gray-900">{formatDate(selectedOrder.createdAt)}</p>
+                </div>
+              </div>
+              
+              {selectedOrder.deliveryAddress && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Delivery Address</Label>
+                  <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{selectedOrder.deliveryAddress}</p>
+                </div>
+              )}
+              
+              {selectedOrder.notes && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Order Notes</Label>
+                  <p className="mt-1 text-sm text-gray-900">{selectedOrder.notes}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setShowOrderDetails(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -14,6 +14,7 @@ import Payments from "@/pages/payments";
 import Customers from "@/pages/customers";
 import Analytics from "@/pages/analytics";
 import Coupons from "@/pages/coupons";
+import BotCommands from "@/pages/bot-commands";
 import Settings from "@/pages/settings";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
       <ProtectedRoute path="/customers" component={Customers} />
       <ProtectedRoute path="/analytics" component={Analytics} />
       <ProtectedRoute path="/coupons" component={Coupons} />
+      <ProtectedRoute path="/bot-commands" component={BotCommands} />
       <ProtectedRoute path="/settings" component={Settings} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
