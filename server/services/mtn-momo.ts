@@ -42,22 +42,23 @@ class MTNMomoService {
   private async initializeCredentials() {
     try {
       // Try to load from database first
-      const clientIdSetting = await storage.getSystemSetting('MTN_CLIENT_ID');
-      const clientSecretSetting = await storage.getSystemSetting('MTN_CLIENT_SECRET');
+      const primaryKeySetting = await storage.getSystemSetting('MTN_PRIMARY_KEY');
+      const secondaryKeySetting = await storage.getSystemSetting('MTN_SECONDARY_KEY');
+      const userIdSetting = await storage.getSystemSetting('MTN_USER_ID');
       const apiBaseUrlSetting = await storage.getSystemSetting('MTN_API_BASE_URL');
       const envSetting = await storage.getSystemSetting('MTN_ENV');
       const callbackSecretSetting = await storage.getSystemSetting('MTN_CALLBACK_SECRET');
 
-      this.clientId = clientIdSetting?.value || process.env.MTN_CLIENT_ID || '';
-      this.clientSecret = clientSecretSetting?.value || process.env.MTN_CLIENT_SECRET || '';
+      this.clientId = userIdSetting?.value || process.env.MTN_COLLECTION_USER_ID || '';
+      this.clientSecret = primaryKeySetting?.value || process.env.MTN_COLLECTION_API_KEY || '';
       this.apiBaseUrl = apiBaseUrlSetting?.value || process.env.MTN_API_BASE_URL || 'https://sandbox.momodeveloper.mtn.com';
       this.env = envSetting?.value || process.env.MTN_ENV || 'sandbox';
       this.callbackSecret = callbackSecretSetting?.value || process.env.MTN_CALLBACK_SECRET || 'default-webhook-secret';
     } catch (error) {
       console.warn('Could not load MTN MoMo settings from database, using environment variables:', error);
       
-      this.clientId = process.env.MTN_CLIENT_ID || '';
-      this.clientSecret = process.env.MTN_CLIENT_SECRET || '';
+      this.clientId = process.env.MTN_COLLECTION_USER_ID || '';
+      this.clientSecret = process.env.MTN_COLLECTION_API_KEY || '';
       this.apiBaseUrl = process.env.MTN_API_BASE_URL || 'https://sandbox.momodeveloper.mtn.com';
       this.env = process.env.MTN_ENV || 'sandbox';
       this.callbackSecret = process.env.MTN_CALLBACK_SECRET || 'default-webhook-secret';
@@ -84,6 +85,14 @@ class MTNMomoService {
     }
 
     try {
+      // Get subscription key from settings
+      const subscriptionKeySetting = await storage.getSystemSetting('MTN_SUBSCRIPTION_KEY');
+      const subscriptionKey = subscriptionKeySetting?.value || process.env.MTN_SUBSCRIPTION_KEY || '';
+      
+      if (!subscriptionKey) {
+        throw new Error('MTN subscription key not configured');
+      }
+
       const credentials = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
       
       const response = await fetch(`${this.apiBaseUrl}/collection/token/`, {
@@ -91,12 +100,14 @@ class MTNMomoService {
         headers: {
           'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json',
-          'Ocp-Apim-Subscription-Key': this.clientId
+          'Ocp-Apim-Subscription-Key': subscriptionKey
         }
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to get MTN token: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('MTN Token Request Failed:', response.status, errorText);
+        throw new Error(`Failed to get MTN token: ${response.statusText} - ${errorText}`);
       }
 
       const tokenData: MTNTokenResponse = await response.json();
@@ -153,7 +164,7 @@ class MTNMomoService {
           'Content-Type': 'application/json',
           'X-Reference-Id': referenceId,
           'X-Target-Environment': this.env,
-          'Ocp-Apim-Subscription-Key': this.clientId
+          'Ocp-Apim-Subscription-Key': (await storage.getSystemSetting('MTN_SUBSCRIPTION_KEY'))?.value || process.env.MTN_SUBSCRIPTION_KEY || ''
         },
         body: JSON.stringify(requestData)
       });
@@ -192,7 +203,7 @@ class MTNMomoService {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-Target-Environment': this.env,
-          'Ocp-Apim-Subscription-Key': this.clientId
+          'Ocp-Apim-Subscription-Key': (await storage.getSystemSetting('MTN_SUBSCRIPTION_KEY'))?.value || process.env.MTN_SUBSCRIPTION_KEY || ''
         }
       });
 

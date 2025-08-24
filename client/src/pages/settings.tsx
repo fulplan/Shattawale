@@ -21,8 +21,10 @@ export default function SettingsPage() {
   });
   const [telegramBotToken, setTelegramBotToken] = useState("");
   const [mtnSettings, setMtnSettings] = useState({
-    clientId: "",
-    clientSecret: "",
+    userId: "",
+    primaryKey: "",
+    secondaryKey: "",
+    subscriptionKey: "",
     apiBaseUrl: "https://sandbox.momodeveloper.mtn.com",
     environment: "sandbox",
     callbackSecret: ""
@@ -122,15 +124,19 @@ export default function SettingsPage() {
       }
 
       // Load MTN MoMo settings
-      const mtnClientId = settings.find((s: any) => s.key === 'MTN_CLIENT_ID');
-      const mtnClientSecret = settings.find((s: any) => s.key === 'MTN_CLIENT_SECRET');
+      const mtnUserId = settings.find((s: any) => s.key === 'MTN_USER_ID');
+      const mtnPrimaryKey = settings.find((s: any) => s.key === 'MTN_PRIMARY_KEY');
+      const mtnSecondaryKey = settings.find((s: any) => s.key === 'MTN_SECONDARY_KEY');
+      const mtnSubscriptionKey = settings.find((s: any) => s.key === 'MTN_SUBSCRIPTION_KEY');
       const mtnApiBaseUrl = settings.find((s: any) => s.key === 'MTN_API_BASE_URL');
       const mtnEnvironment = settings.find((s: any) => s.key === 'MTN_ENV');
       const mtnCallbackSecret = settings.find((s: any) => s.key === 'MTN_CALLBACK_SECRET');
 
       setMtnSettings({
-        clientId: mtnClientId?.value || '',
-        clientSecret: mtnClientSecret?.value || '',
+        userId: mtnUserId?.value || '',
+        primaryKey: mtnPrimaryKey?.value || '',
+        secondaryKey: mtnSecondaryKey?.value || '',
+        subscriptionKey: mtnSubscriptionKey?.value || '',
         apiBaseUrl: mtnApiBaseUrl?.value || 'https://sandbox.momodeveloper.mtn.com',
         environment: mtnEnvironment?.value || 'sandbox',
         callbackSecret: mtnCallbackSecret?.value || ''
@@ -160,10 +166,10 @@ export default function SettingsPage() {
   const handleMtnSave = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!mtnSettings.clientId.trim() || !mtnSettings.clientSecret.trim()) {
+    if (!mtnSettings.userId.trim() || !mtnSettings.primaryKey.trim() || !mtnSettings.subscriptionKey.trim()) {
       toast({
         title: "Validation Error",
-        description: "Please enter both Client ID and Client Secret.",
+        description: "Please enter User ID, Primary Key, and Subscription Key.",
         variant: "destructive",
       });
       return;
@@ -172,14 +178,24 @@ export default function SettingsPage() {
     // Save all MTN settings
     const promises = [
       updateSettingMutation.mutateAsync({
-        key: 'MTN_CLIENT_ID',
-        value: mtnSettings.clientId,
-        description: 'MTN MoMo API Client ID'
+        key: 'MTN_USER_ID',
+        value: mtnSettings.userId,
+        description: 'MTN MoMo API User ID'
       }),
       updateSettingMutation.mutateAsync({
-        key: 'MTN_CLIENT_SECRET',
-        value: mtnSettings.clientSecret,
-        description: 'MTN MoMo API Client Secret'
+        key: 'MTN_PRIMARY_KEY',
+        value: mtnSettings.primaryKey,
+        description: 'MTN MoMo API Primary Key'
+      }),
+      updateSettingMutation.mutateAsync({
+        key: 'MTN_SECONDARY_KEY',
+        value: mtnSettings.secondaryKey,
+        description: 'MTN MoMo API Secondary Key'
+      }),
+      updateSettingMutation.mutateAsync({
+        key: 'MTN_SUBSCRIPTION_KEY',
+        value: mtnSettings.subscriptionKey,
+        description: 'MTN MoMo Subscription Key'
       }),
       updateSettingMutation.mutateAsync({
         key: 'MTN_API_BASE_URL',
@@ -458,25 +474,50 @@ export default function SettingsPage() {
                 <form onSubmit={handleMtnSave} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="mtnClientId">Client ID</Label>
+                      <Label htmlFor="mtnUserId">User ID</Label>
                       <Input
-                        id="mtnClientId"
+                        id="mtnUserId"
                         type="text"
-                        value={mtnSettings.clientId}
-                        onChange={(e) => setMtnSettings({ ...mtnSettings, clientId: e.target.value })}
-                        placeholder="Enter MTN MoMo Client ID"
-                        data-testid="input-mtn-client-id"
+                        value={mtnSettings.userId}
+                        onChange={(e) => setMtnSettings({ ...mtnSettings, userId: e.target.value })}
+                        placeholder="Enter MTN MoMo User ID"
+                        data-testid="input-mtn-user-id"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="mtnClientSecret">Client Secret</Label>
+                      <Label htmlFor="mtnPrimaryKey">Primary Key</Label>
                       <Input
-                        id="mtnClientSecret"
+                        id="mtnPrimaryKey"
                         type="password"
-                        value={mtnSettings.clientSecret}
-                        onChange={(e) => setMtnSettings({ ...mtnSettings, clientSecret: e.target.value })}
-                        placeholder="Enter MTN MoMo Client Secret"
-                        data-testid="input-mtn-client-secret"
+                        value={mtnSettings.primaryKey}
+                        onChange={(e) => setMtnSettings({ ...mtnSettings, primaryKey: e.target.value })}
+                        placeholder="Enter your Primary Key from MTN Developer Portal"
+                        data-testid="input-mtn-primary-key"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="mtnSecondaryKey">Secondary Key (Optional)</Label>
+                      <Input
+                        id="mtnSecondaryKey"
+                        type="password"
+                        value={mtnSettings.secondaryKey}
+                        onChange={(e) => setMtnSettings({ ...mtnSettings, secondaryKey: e.target.value })}
+                        placeholder="Enter your Secondary Key (optional)"
+                        data-testid="input-mtn-secondary-key"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="mtnSubscriptionKey">Subscription Key</Label>
+                      <Input
+                        id="mtnSubscriptionKey"
+                        type="password"
+                        value={mtnSettings.subscriptionKey}
+                        onChange={(e) => setMtnSettings({ ...mtnSettings, subscriptionKey: e.target.value })}
+                        placeholder="Enter your Subscription Key"
+                        data-testid="input-mtn-subscription-key"
                       />
                     </div>
                   </div>
@@ -536,10 +577,16 @@ export default function SettingsPage() {
                     <div className="flex items-start space-x-2">
                       <Globe className="h-4 w-4 text-amber-600 mt-0.5" />
                       <div className="text-sm">
-                        <p className="font-medium text-amber-900">MTN MoMo Developer Account Required</p>
-                        <p className="text-amber-700">
-                          You need to register at <a href="https://momodeveloper.mtn.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">MTN MoMo Developer Portal</a> to get your API credentials.
+                        <p className="font-medium text-amber-900">How to Get Your MTN MoMo Keys</p>
+                        <p className="text-amber-700 mb-2">
+                          Register at <a href="https://momodeveloper.mtn.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">MTN MoMo Developer Portal</a> to get your keys.
                         </p>
+                        <div className="text-xs text-amber-600 space-y-1">
+                          <p>📋 <strong>Primary Key:</strong> Your main API key from the portal</p>
+                          <p>📋 <strong>Secondary Key:</strong> Backup key (optional)</p>
+                          <p>📋 <strong>Subscription Key:</strong> Your Ocp-Apim-Subscription-Key</p>
+                          <p>👤 <strong>User ID:</strong> Your collection user ID</p>
+                        </div>
                       </div>
                     </div>
                   </div>

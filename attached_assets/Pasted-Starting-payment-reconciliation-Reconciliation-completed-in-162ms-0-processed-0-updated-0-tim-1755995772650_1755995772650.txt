@@ -1,0 +1,30 @@
+Starting payment reconciliation...
+Reconciliation completed in 162ms: 0 processed, 0 updated, 0 timed out
+Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+12:34:05 AM [express] GET /api/user 304 in 319ms :: {"id":"0d54ef0e-5403-4f05-ae4f-b6c34d445c3e","ema…
+12:34:05 AM [express] GET /api/categories 304 in 412ms :: [{"id":"9d5db5f8-4812-4d8a-b88f-6dc776dbe0b…
+12:34:05 AM [express] GET /api/products 304 in 416ms :: []
+12:35:01 AM [express] POST /api/products 201 in 754ms :: {"id":"b440ef50-7e9b-4682-b7de-72edad2963fb"…
+12:35:02 AM [express] GET /api/products 200 in 409ms :: [{"id":"b440ef50-7e9b-4682-b7de-72edad2963fb"…
+12:35:06 AM [express] GET /api/orders 304 in 421ms :: []
+Checkout initiated for user: 1513508470
+Error getting MTN auth token: Error: Failed to get MTN token: Access Denied
+    at MTNMomoService.getAuthToken (/home/runner/workspace/server/services/mtn-momo.ts:99:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async MTNMomoService.initiateCollection (/home/runner/workspace/server/services/mtn-momo.ts:122:21)
+    at async TelegramService.processPayment (/home/runner/workspace/server/services/telegram.ts:607:32)
+    at async TelegramService.handleTextMessage (/home/runner/workspace/server/services/telegram.ts:476:7)
+    at async TelegramService.handleMessage (/home/runner/workspace/server/services/telegram.ts:171:7)
+    at async TelegramService.handleWebhook (/home/runner/workspace/server/services/telegram.ts:130:9)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:53:5)
+Error initiating MTN collection: Error: Failed to get MTN token: Access Denied
+    at MTNMomoService.getAuthToken (/home/runner/workspace/server/services/mtn-momo.ts:99:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async MTNMomoService.initiateCollection (/home/runner/workspace/server/services/mtn-momo.ts:122:21)
+    at async TelegramService.processPayment (/home/runner/workspace/server/services/telegram.ts:607:32)
+    at async TelegramService.handleTextMessage (/home/runner/workspace/server/services/telegram.ts:476:7)
+    at async TelegramService.handleMessage (/home/runner/workspace/server/services/telegram.ts:171:7)
+    at async TelegramService.handleWebhook (/home/runner/workspace/server/services/telegram.ts:130:9)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:53:5)

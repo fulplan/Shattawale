@@ -204,7 +204,7 @@ class TelegramService {
       }
     } else if (data.startsWith('order_status_')) {
       const orderId = data.replace('order_status_', '');
-      await this.showOrderStatus(chatId, orderId);
+      await this.showOrderDetails(chatId, orderId);
     }
   }
 
@@ -579,6 +579,42 @@ Please reply with your phone number:`;
     return this.webhookPath;
   }
 
+  private async showOrderDetails(chatId: number, orderId: string) {
+    try {
+      const order = await storage.getOrder(orderId);
+      
+      if (!order) {
+        await this.sendMessage(chatId, '❌ Order not found.');
+        return;
+      }
+
+      const orderMessage = `📦 **Order Details**
+
+🆔 **Order ID:** ${order.id.substring(0, 8)}
+📋 **Order Number:** ${order.orderNumber}
+💰 **Total:** ₵${order.totalGhs}
+📊 **Status:** ${order.status}
+📱 **Phone:** ${order.customerPhone || 'N/A'}
+📅 **Date:** ${order.createdAt.toLocaleDateString()}
+
+${order.notes ? `📝 **Notes:** ${order.notes}\n\n` : ''}📍 **Delivery Address:**
+${order.address ? Object.values(order.address).join(', ') : 'Not provided'}`;
+
+      await this.sendMessage(chatId, orderMessage, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '📦 My Orders', callback_data: 'my_orders' }],
+            [{ text: '🏠 Main Menu', callback_data: 'main_menu' }]
+          ]
+        }
+      });
+    } catch (error) {
+      console.error('Error showing order details:', error);
+      await this.sendMessage(chatId, '❌ Unable to load order details. Please try again.');
+    }
+  }
+
   private async processPayment(chatId: number, phoneNumber: string, user: any) {
     try {
       // Validate phone number format
@@ -614,12 +650,16 @@ Please reply with your phone number:`;
       if (collectionResult.success) {
         // Create order and payment records
         const order = await storage.createOrder({
-          telegramUserId: user.telegramId,
+          userId: user.id,
           customerPhone: phoneNumber,
           totalGhs: amount,
-          status: 'PENDING',
-          deliveryAddress: 'TBD', // Would normally collect this
-          items: [], // Would normally come from cart
+          status: 'PENDING' as const,
+          address: {
+            street: 'TBD',
+            city: 'TBD',
+            region: 'TBD',
+            country: 'Ghana'
+          } as Record<string, any>
         });
 
         const payment = await storage.createPayment({
@@ -627,11 +667,11 @@ Please reply with your phone number:`;
           provider: 'mtn_momo',
           amountGhs: amount,
           currency: 'GHS',
-          status: 'PENDING',
+          status: 'PENDING' as const,
           providerReference: collectionResult.referenceId,
           externalId,
           customerPhone: phoneNumber,
-          idempotencyKey: `payment_${externalId}`,
+          idempotencyKey: `payment_${externalId}`
         });
 
         // Success message with payment instructions
